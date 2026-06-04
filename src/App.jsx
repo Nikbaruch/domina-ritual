@@ -171,6 +171,21 @@ const DisciplineRitual = ({ back, addTokens, user, setUser }) => {
     setEndTime(targetTime);
   };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   // Gestion robuste du Chronomètre basée sur l'heure réelle (Date.now())
   useEffect(() => {
     if ((step !== 'prep' && step !== 'active') || !endTime) return;
@@ -183,7 +198,7 @@ const DisciplineRitual = ({ back, addTokens, user, setUser }) => {
 
     setTimeLeft(calculateTimeLeft());
 
-    const timerId = setInterval(() => {
+const timerId = setInterval(() => {
       const remaining = calculateTimeLeft();
       setTimeLeft(remaining);
 
@@ -192,15 +207,19 @@ const DisciplineRitual = ({ back, addTokens, user, setUser }) => {
         if (step === 'prep') {
           // Passage au timer principal
           setStep('active');
-          // Pour les tests, on va réduire le temps réel sinon on attendra des jours
-          // Dans la vraie vie : + tarotResult.secs * 1000
-          const testDuration = 10 * 1000; // 10 secondes pour tester la fin
-          setEndTime(Date.now() + testDuration); 
+          
+          // CORRECTION : On utilise la durée réelle calculée lors du tirage des cartes
+          // tarotResult.secs est en secondes, on multiplie par 1000 pour les millisecondes
+          const realDuration = tarotResult.secs * 1000; 
+          setEndTime(Date.now() + realDuration); 
+          
         } else if (step === 'active') {
           setStep('completed');
         }
       }
-    }, 1000);
+
+
+
 
     return () => clearInterval(timerId);
   }, [step, endTime]);
