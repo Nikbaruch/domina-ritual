@@ -1,4 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import PenanceRitual from './PenanceRitual';
+import AdminDashboard from './AdminDashboard';
+import DivineReward from './DivineReward';
+import { supabase } from './supabaseClient';
 import { 
   Flame, Lock, Dumbbell, Gift, Menu, X, 
   Sparkles, User, ChevronLeft, Hexagon, Circle, Disc,
@@ -40,20 +44,15 @@ const formatTime = (totalSeconds) => {
 };
 
 // --- COMPOSANT DE CHEMIN : DISCIPLINE (CHASTETÉ) ---
-const DisciplineRitual = ({ back, addTokens, user, setUser }) => {
+const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
   const [step, setStep] = useState('inventory'); 
   const [inventory, setInventory] = useState([]);
   const [selectedCage, setSelectedCage] = useState(null);
   const [vowType, setVowType] = useState(null);
   const [durationStr, setDurationStr] = useState('');
   
-  // Variables temporelles robustes (Préparation Backend)
   const [endTime, setEndTime] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
-
-  // Authentification
-  const [authName, setAuthName] = useState('');
-  const [authPass, setAuthPass] = useState('');
 
   // Tarot Animation States
   const [tarotContext, setTarotContext] = useState(null);
@@ -143,22 +142,8 @@ const DisciplineRitual = ({ back, addTokens, user, setUser }) => {
   // Validation finale et lancement du Timer
   const handleProceedToTimer = () => {
     if (!user) {
-      setStep('auth_gate');
+      requireAuth();
     } else {
-      startPrepPhase();
-    }
-  };
-
-  // Simulation Supabase : Connexion via Pseudo/MDP (Faux Email en arrière-plan)
-  const handleAuth = (e) => {
-    e.preventDefault();
-    if (authName.trim() && authPass.trim()) {
-      // CODE FUTUR SUPABASE ICI :
-      // const dummyEmail = `${authName.trim().toLowerCase()}@domina-ritual.local`;
-      // const { data, error } = await supabase.auth.signInWithPassword({ email: dummyEmail, password: authPass });
-      // if(error) await supabase.auth.signUp({ email: dummyEmail, password: authPass, options: { data: { username: authName } }});
-      
-      setUser(authName.trim());
       startPrepPhase();
     }
   };
@@ -440,38 +425,6 @@ const DisciplineRitual = ({ back, addTokens, user, setUser }) => {
         </div>
       )}
 
-      {/* 5. VÉRIFICATION D'IDENTITÉ (AUTH) */}
-      {step === 'auth_gate' && (
-        <div className="py-12 text-center animate-in zoom-in-95 duration-500">
-          <Fingerprint size={48} className="mx-auto text-amber-500 mb-6" />
-          <h2 className="font-serif text-2xl text-amber-400 mb-4">Identify Yourself</h2>
-          <p className="text-amber-700/80 mb-8 max-w-md mx-auto">
-            The seal cannot be cast on an unknown soul. Enter your alias and secret to bind this vow to your treasury.
-          </p>
-          <form onSubmit={handleAuth} className="max-w-xs mx-auto space-y-4">
-            <div className="relative">
-              <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900" />
-              <input 
-                type="text" value={authName} onChange={(e) => setAuthName(e.target.value)}
-                placeholder="Your Alias..." required
-                className="w-full bg-zinc-900 border border-amber-900/50 p-4 pl-12 text-amber-100 placeholder:text-amber-900/50 focus:outline-none focus:border-amber-500"
-              />
-            </div>
-            <div className="relative">
-              <Key size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900" />
-              <input 
-                type="password" value={authPass} onChange={(e) => setAuthPass(e.target.value)}
-                placeholder="Secret Key..." required
-                className="w-full bg-zinc-900 border border-amber-900/50 p-4 pl-12 text-amber-100 placeholder:text-amber-900/50 focus:outline-none focus:border-amber-500"
-              />
-            </div>
-            <button type="submit" className="w-full py-4 bg-amber-600 text-zinc-950 font-bold uppercase tracking-[0.2em] hover:bg-amber-500 transition-colors">
-              Bind my Soul
-            </button>
-          </form>
-        </div>
-      )}
-
       {/* 6. LES TIMERS (PREP & ACTIVE) */}
       {(step === 'prep' || step === 'active') && (
         <div className="py-12 flex flex-col items-center text-center border border-amber-900/50 bg-amber-950/20 relative overflow-hidden animate-in fade-in">
@@ -537,18 +490,372 @@ const DisciplineRitual = ({ back, addTokens, user, setUser }) => {
   );
 };
 
+// --- AGE VERIFICATION GATE ---
+const AgeVerificationGate = ({ onVerified }) => (
+  <div className={`min-h-screen ${THEME.bg} flex flex-col items-center justify-center p-4 relative overflow-hidden`}>
+    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-950/20 via-zinc-950 to-zinc-950 pointer-events-none"></div>
+    <div className="max-w-md w-full border border-amber-500/30 bg-zinc-900/80 backdrop-blur-sm p-8 text-center shadow-[0_0_30px_rgba(245,158,11,0.1)] animate-in zoom-in duration-1000 relative z-10">
+      <ShieldAlert size={56} className="mx-auto text-amber-500 mb-6" />
+      <h1 className="font-serif text-3xl text-amber-500 mb-4 uppercase tracking-widest drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]">Restricted Sanctuary</h1>
+      <p className="text-amber-700/80 mb-8 leading-relaxed">
+        This domain contains mature themes of devotion, discipline, and confinement. 
+        You must be at least 18 years of age to proceed.
+      </p>
+      <div className="flex flex-col gap-4">
+        <button 
+          onClick={onVerified}
+          className="w-full py-4 bg-amber-900/20 hover:bg-amber-900/40 border border-amber-500 text-amber-400 font-serif tracking-[0.2em] uppercase transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_30px_rgba(245,158,11,0.4)]"
+        >
+          I am +18
+        </button>
+        <a 
+          href="https://www.google.com"
+          className="w-full py-4 border border-zinc-800 text-zinc-600 hover:bg-zinc-900 hover:text-zinc-400 font-serif tracking-[0.1em] uppercase transition-all"
+        >
+          I am under 18 (Leave)
+        </a>
+      </div>
+    </div>
+  </div>
+);
+
+// --- INTRO PANEL ---
+const INTRO_PARAGRAPHS = [
+  {
+    type: 'normal',
+    segments: [
+      { text: "Welcome to the Sanctuary. Here, your obedience is measured, quantified, and ultimately, rewarded. This is a realm where submission is not merely an idea, but a tangible currency." }
+    ]
+  },
+  {
+    type: 'normal',
+    segments: [
+      { text: "By embracing the " },
+      { text: "Discipline", highlight: true },
+      { text: " of the cage, or by enduring the pain of " },
+      { text: "Penance", highlight: true },
+      { text: ", you prove your worth to the Domina. Every vow fulfilled, every proof accepted, swells your Treasury with sacred Tokens." }
+    ]
+  },
+  {
+    type: 'normal',
+    segments: [
+      { text: "These tokens are your lifeblood. Hoard them carefully, for when the time is right, you may offer them all in exchange for the " },
+      { text: "Divine Reward", highlight: true },
+      { text: ". The greater your sacrifice, the more the Oracle will smile upon your pleasure." }
+    ]
+  },
+  {
+    type: 'italic-center',
+    segments: [
+      { text: "Will you prove yourself worthy?" }
+    ]
+  }
+];
+
+// Precompute absolute character ranges for each text segment
+let totalCharacterCount = 0;
+const processedParagraphs = INTRO_PARAGRAPHS.map(p => {
+  const segments = p.segments.map(s => {
+    const start = totalCharacterCount;
+    const end = totalCharacterCount + s.text.length;
+    totalCharacterCount += s.text.length;
+    return { ...s, start, end };
+  });
+  return { ...p, segments };
+});
+
+const IntroPanel = ({ onProceed }) => {
+  const [visibleLength, setVisibleLength] = useState(0);
+  const [isDone, setIsDone] = useState(false);
+
+  useEffect(() => {
+    if (visibleLength >= totalCharacterCount) {
+      setIsDone(true);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setVisibleLength(prev => Math.min(prev + 1, totalCharacterCount));
+    }, 20); // 20ms per character for smooth progressive writing
+    return () => clearTimeout(timer);
+  }, [visibleLength]);
+
+  const handleSkip = () => {
+    setVisibleLength(totalCharacterCount);
+    setIsDone(true);
+  };
+
+  const handleProceedClick = () => {
+    if (!isDone) {
+      handleSkip();
+    } else {
+      onProceed();
+    }
+  };
+
+  return (
+    <div 
+      onClick={!isDone ? handleSkip : undefined}
+      className={`min-h-screen ${THEME.bg} flex flex-col items-center justify-center p-4 relative overflow-hidden cursor-pointer select-none`}
+      title={!isDone ? "Click anywhere to reveal text" : undefined}
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-950/20 via-zinc-950 to-zinc-950 pointer-events-none"></div>
+      <div 
+        className="max-w-2xl w-full border border-amber-500/30 bg-zinc-900/80 backdrop-blur-sm p-8 md:p-12 text-center shadow-[0_0_30px_rgba(245,158,11,0.1)] relative z-10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="font-serif text-3xl md:text-4xl text-amber-500 mb-6 uppercase tracking-widest drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]">
+          The Path of Devotion
+        </h2>
+        
+        <div className="space-y-6 text-amber-700/80 text-sm md:text-base leading-relaxed mb-10 text-left min-h-[300px] md:min-h-[200px]">
+          {processedParagraphs.map((p, pIdx) => {
+            const pStart = p.segments[0].start;
+            if (visibleLength < pStart) return null;
+
+            const isCenterItalic = p.type === 'italic-center';
+            const pClass = isCenterItalic 
+              ? "text-center italic text-amber-600/80 mt-8 font-serif text-lg" 
+              : "";
+
+            return (
+              <p key={pIdx} className={pClass}>
+                {p.segments.map((s, sIdx) => {
+                  if (visibleLength <= s.start) return null;
+                  
+                  const textToShow = s.text.slice(0, visibleLength - s.start);
+                  const isCursorHere = !isDone && visibleLength >= s.start && visibleLength < s.end;
+
+                  return (
+                    <span key={sIdx}>
+                      {s.highlight ? (
+                        <strong className="text-amber-500 font-serif font-normal">
+                          {textToShow}
+                        </strong>
+                      ) : (
+                        <span>{textToShow}</span>
+                      )}
+                      {isCursorHere && (
+                        <span className="inline-block w-1.5 h-4 bg-amber-500 ml-0.5 align-middle animate-pulse" />
+                      )}
+                    </span>
+                  );
+                })}
+              </p>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-col items-center gap-4">
+          <button 
+            onClick={handleProceedClick}
+            className="w-full md:w-auto px-12 py-4 bg-amber-600 text-zinc-950 font-bold tracking-[0.2em] uppercase transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_30px_rgba(245,158,11,0.4)] hover:bg-amber-500"
+          >
+            {isDone ? "Enter the Sanctuary" : "Reveal Text"}
+          </button>
+          
+          {!isDone && (
+            <p className="text-zinc-600 text-xs tracking-widest uppercase hover:text-zinc-400 transition-colors animate-pulse">
+              [ Click anywhere to skip typing ]
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- AUTH MODAL ---
+const AuthModal = ({ onClose }) => {
+  const [authName, setAuthName] = useState('');
+  const [authPass, setAuthPass] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    if (authName.trim() && authPass.trim()) {
+      setLoading(true);
+      const dummyEmail = `${authName.trim().toLowerCase()}@dominaritual.com`;
+      let { error } = await supabase.auth.signInWithPassword({ email: dummyEmail, password: authPass });
+      
+      if (error) {
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
+          email: dummyEmail, 
+          password: authPass
+        });
+        if (signUpError) {
+          alert("Error: " + signUpError.message);
+          setLoading(false);
+          return;
+        }
+        
+        if (signUpData.user) {
+          await supabase.from('profiles').insert([
+            { id: signUpData.user.id, username: authName.trim() }
+          ]);
+        }
+      }
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-zinc-950/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="bg-zinc-900 border border-amber-500/50 p-8 max-w-sm w-full relative shadow-[0_0_50px_rgba(245,158,11,0.1)] animate-in zoom-in duration-300">
+        <button onClick={onClose} className="absolute top-4 right-4 text-amber-700 hover:text-amber-500"><X size={24} /></button>
+        <Fingerprint size={48} className="mx-auto text-amber-500 mb-6" />
+        <h2 className="font-serif text-2xl text-amber-400 mb-4 text-center">Identify Yourself</h2>
+        <p className="text-amber-700/80 mb-8 text-center text-sm">
+          Enter your alias and secret to bind your soul.
+        </p>
+        <form onSubmit={handleAuth} className="space-y-4">
+          <div className="relative">
+            <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900" />
+            <input 
+              type="text" value={authName} onChange={(e) => setAuthName(e.target.value)}
+              placeholder="Your Alias..." required
+              className="w-full bg-zinc-950 border border-amber-900/50 p-4 pl-12 text-amber-100 placeholder:text-amber-900/50 focus:outline-none focus:border-amber-500"
+            />
+          </div>
+          <div className="relative">
+            <Key size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900" />
+            <input 
+              type="password" value={authPass} onChange={(e) => setAuthPass(e.target.value)}
+              placeholder="Secret Key..." required
+              className="w-full bg-zinc-950 border border-amber-900/50 p-4 pl-12 text-amber-100 placeholder:text-amber-900/50 focus:outline-none focus:border-amber-500"
+            />
+          </div>
+          <button type="submit" disabled={loading} className="w-full py-4 bg-amber-600 text-zinc-950 font-bold uppercase tracking-[0.2em] hover:bg-amber-500 transition-colors disabled:opacity-50">
+            {loading ? 'Binding...' : 'Bind my Soul'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // --- APP PRINCIPALE ---
 export default function App() {
+  const [isAdultVerified, setIsAdultVerified] = useState(false);
+  const [introSeen, setIntroSeen] = useState(false);
   const [view, setView] = useState('hub');
   const [tokens, setTokens] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [user, setUser] = useState(null); 
+  const [profile, setProfile] = useState(null);
 
-  const addTokens = (amount) => setTokens(prev => prev + amount);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUser(session.user);
+        fetchProfile(session.user.id);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchProfile = async (userId) => {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (data) {
+      setProfile(data);
+      setTokens(data.tokens);
+    } else {
+      // Auto-create profile if missing
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const fallbackUsername = user.email ? user.email.split('@')[0] : 'obedient_soul';
+        const { data: newProfile } = await supabase
+          .from('profiles')
+          .insert([{ id: userId, username: fallbackUsername }])
+          .select()
+          .single();
+        if (newProfile) {
+          setProfile(newProfile);
+          setTokens(newProfile.tokens);
+        }
+      }
+    }
+  };
+
+  const addTokens = async (amount) => {
+    const newTotal = tokens + amount;
+    setTokens(newTotal);
+    if (user) {
+      await supabase.from('profiles').update({ tokens: newTotal }).eq('id', user.id);
+    }
+  };
+
+  const spendAllTokens = async () => {
+    setTokens(0);
+    if (user) {
+      await supabase.from('profiles').update({ tokens: 0 }).eq('id', user.id);
+    }
+  };
+
+  const ProfileView = () => (
+    <div className="max-w-2xl mx-auto p-6 pt-12 animate-in fade-in duration-700">
+      <div className="flex items-center justify-between mb-8 border-b border-amber-900/30 pb-4">
+        <h2 className="font-serif text-3xl text-amber-500 flex items-center gap-3">
+          <User size={32} /> Soul Profile
+        </h2>
+        <button onClick={() => setView('hub')} className="text-amber-700 hover:text-amber-500 uppercase tracking-widest text-xs">
+          Return to Sanctuary
+        </button>
+      </div>
+
+      <div className={`${THEME.panel} p-8 mb-8`}>
+        <div className="flex items-center gap-6 mb-8">
+          <div className="w-24 h-24 rounded-full border border-amber-500 bg-amber-900/20 flex items-center justify-center">
+            <User size={48} className="text-amber-400" />
+          </div>
+          <div>
+            <h3 className="font-serif text-2xl text-amber-400 mb-1">{profile?.username || 'Unknown Soul'}</h3>
+            <p className="text-amber-700/60 uppercase tracking-widest text-xs">ID: {user?.id?.slice(0, 8)}...</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-zinc-950 border border-amber-900/30 p-6 text-center">
+            <p className="text-amber-700/60 uppercase tracking-widest text-xs mb-2">Treasury</p>
+            <p className="text-amber-500 font-mono text-3xl">{tokens} ⏀</p>
+          </div>
+          <div className="bg-zinc-950 border border-amber-900/30 p-6 text-center">
+            <p className="text-amber-700/60 uppercase tracking-widest text-xs mb-2">Role</p>
+            <p className="text-amber-500 font-mono text-3xl capitalize">{profile?.role || 'User'}</p>
+          </div>
+        </div>
+      </div>
+
+      <button 
+        onClick={async () => {
+          await supabase.auth.signOut();
+          setView('hub');
+        }} 
+        className="w-full py-4 border border-red-900/50 text-red-700 hover:bg-red-900/20 hover:text-red-500 font-serif tracking-[0.2em] uppercase transition-all"
+      >
+        Sever Binding (Logout)
+      </button>
+    </div>
+  );
 
   const renderContent = () => {
     switch (view) {
-      case 'chastity': return <DisciplineRitual back={() => setView('hub')} addTokens={addTokens} user={user} setUser={setUser} />;
+      case 'chastity': return <DisciplineRitual back={() => setView('hub')} addTokens={addTokens} user={user} requireAuth={() => setShowAuthModal(true)} />;
+      case 'penance': return <PenanceRitual back={() => setView('hub')} addTokens={addTokens} user={user} profile={profile} requireAuth={() => setShowAuthModal(true)} />;
+      case 'reward': return <DivineReward back={() => setView('hub')} tokens={tokens} spendAllTokens={spendAllTokens} addTokens={addTokens} />;
+      case 'admin': return <AdminDashboard back={() => setView('hub')} />;
+      case 'profile': return <ProfileView />;
       default: return <HubView />;
     }
   };
@@ -557,8 +864,8 @@ export default function App() {
     <main className="max-w-4xl mx-auto p-6 pt-12 space-y-16 animate-in fade-in duration-700">
       {/* Piliers */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <button className={`${THEME.panel} p-8 text-center flex flex-col items-center group opacity-50`}>
-          <Flame size={40} className="mb-4 text-amber-700" />
+        <button onClick={() => setView('penance')} className={`${THEME.panel} p-8 text-center flex flex-col items-center group`}>
+          <Flame size={40} className="mb-4 text-amber-700 group-hover:text-amber-500" />
           <h2 className="font-serif text-xl text-amber-500 mb-2">Penance</h2>
         </button>
         <button onClick={() => setView('chastity')} className={`${THEME.panel} p-8 text-center flex flex-col items-center group`}>
@@ -588,21 +895,40 @@ export default function App() {
     </main>
   );
 
+  if (!isAdultVerified) {
+    return <AgeVerificationGate onVerified={() => setIsAdultVerified(true)} />;
+  }
+
+  if (!introSeen) {
+    return <IntroPanel onProceed={() => setIntroSeen(true)} />;
+  }
+
   return (
     <div className={`min-h-screen ${THEME.bg} text-zinc-300 font-sans selection:bg-amber-900/50 overflow-x-hidden`}>
-      <header className={`sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-md flex justify-between items-center p-6 ${THEME.header}`}>
-        <button onClick={() => setMenuOpen(true)} className="text-amber-700 p-2"><Menu size={28} /></button>
-        <h1 onClick={() => setView('hub')} className="text-2xl font-serif text-amber-500 tracking-[0.25em] uppercase cursor-pointer">Domina Ritual</h1>
-        <div className="flex gap-6 items-center">
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+      <header className={`sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-md flex justify-between items-center p-4 md:p-6 ${THEME.header}`}>
+        <div className="flex items-center gap-2 md:gap-4">
+          <button onClick={() => setMenuOpen(true)} className="text-amber-700 p-2 hover:text-amber-500 transition-colors"><Menu size={28} /></button>
+        </div>
+        <h1 onClick={() => setView('hub')} className="text-xl md:text-2xl font-serif text-amber-500 tracking-[0.1em] md:tracking-[0.25em] uppercase cursor-pointer">Domina Ritual</h1>
+        <div className="flex gap-2 md:gap-6 items-center">
           <div className="text-right hidden md:block">
             <span className="text-amber-700/60 text-xs uppercase tracking-widest block mb-1">Treasury</span>
             <span className="text-amber-500 font-mono text-lg">{tokens} ⏀</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="text-right hidden sm:block mr-2"><span className="text-amber-700/60 text-xs uppercase tracking-widest block">{user || 'Unknown Soul'}</span></div>
-            <div className={`w-10 h-10 rounded-full border flex items-center justify-center ${user ? 'border-amber-500 bg-amber-900/20' : 'border-amber-800 bg-zinc-900'}`}>
-              <User size={18} className={user ? 'text-amber-400' : 'text-amber-600'} />
-            </div>
+            {!user ? (
+              <button onClick={() => setShowAuthModal(true)} className="text-amber-500 font-serif uppercase tracking-widest text-[10px] md:text-xs border border-amber-900/50 px-3 md:px-4 py-2 hover:bg-amber-900/20 transition-colors shadow-[0_0_10px_rgba(245,158,11,0.1)]">
+                Login
+              </button>
+            ) : (
+              <button onClick={() => setView('profile')} className="flex items-center gap-2 text-left group">
+                <div className="text-right hidden sm:block mr-2"><span className="text-amber-700/60 text-xs uppercase tracking-widest block group-hover:text-amber-500 transition-colors">{profile?.username || 'Soul'}</span></div>
+                <div className={`w-10 h-10 rounded-full border flex items-center justify-center border-amber-500 bg-amber-900/20 group-hover:bg-amber-800/40 transition-colors`}>
+                  <User size={18} className="text-amber-400" />
+                </div>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -612,7 +938,8 @@ export default function App() {
           <button onClick={() => setMenuOpen(false)} className="self-end text-amber-700"><X size={36} /></button>
           <nav className="flex flex-col items-center flex-1 gap-10 text-3xl font-serif text-amber-500/50 uppercase mt-20">
             <button onClick={() => { setView('hub'); setMenuOpen(false); }}>Sanctuary</button>
-            {user && <button onClick={() => { setUser(null); setMenuOpen(false); }} className="text-red-900/50 hover:text-red-500 mt-8 text-xl">Sever Soul (Logout)</button>}
+            {profile?.role === 'admin' && <button onClick={() => { setView('admin'); setMenuOpen(false); }} className="text-amber-400">Domina Dashboard</button>}
+            {user && <button onClick={() => { supabase.auth.signOut(); setMenuOpen(false); }} className="text-red-900/50 hover:text-red-500 mt-8 text-xl">Sever Soul (Logout)</button>}
           </nav>
         </div>
       )}
