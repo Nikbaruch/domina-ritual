@@ -876,7 +876,9 @@ export default function App() {
       case 'chastity': return <DisciplineRitual back={() => setView('hub')} addTokens={addTokens} user={user} requireAuth={() => setShowAuthModal(true)} />;
       case 'penance': return <PenanceRitual back={() => setView('hub')} addTokens={addTokens} user={user} profile={profile} requireAuth={() => setShowAuthModal(true)} />;
       case 'reward': return <DivineReward back={() => setView('hub')} tokens={tokens} spendAllTokens={spendAllTokens} addTokens={addTokens} />;
-      case 'admin': return <AdminDashboard back={() => setView('hub')} />;
+      case 'admin':
+        if (profile?.role !== 'admin') return <HubView />;
+        return <AdminDashboard back={() => setView('hub')} />;
       case 'profile': return <ProfileView />;
       default: return <HubView />;
     }
