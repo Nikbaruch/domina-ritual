@@ -3,15 +3,15 @@ import PenanceRitual from './PenanceRitual';
 import AdminDashboard from './AdminDashboard';
 import DivineReward from './DivineReward';
 import { supabase } from './supabaseClient';
-import { 
-  Flame, Lock, Dumbbell, Gift, Menu, X, 
+import {
+  Flame, Lock, Dumbbell, Gift, Menu, X,
   Sparkles, User, ChevronLeft, Hexagon, Circle, Disc,
   Maximize2, Minimize2, ScanLine, MinusCircle, ShieldAlert,
   Fingerprint, Hourglass, Eye, Key
 } from 'lucide-react';
 
 const THEME = {
-  bg: 'bg-zinc-950',
+  bg: 'bg-black',
   panel: 'bg-zinc-900/50 border border-amber-900/30 hover:border-amber-600 transition-all duration-500',
   panelActive: 'bg-amber-900/40 border border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]',
   text: 'text-amber-500',
@@ -19,6 +19,21 @@ const THEME = {
   gold: 'text-amber-400',
   header: 'border-b border-amber-900/30',
 };
+
+// --- SUBTLE LACE DECORATION (DENTELLE DEPUIS PNG) ---
+const LaceDecoration = () => (
+  <div className="fixed bottom-0 left-0 right-0 h-32 pointer-events-none z-50 overflow-hidden select-none">
+    <div 
+      className="absolute inset-0 z-0 opacity-35"
+      style={{
+        backgroundImage: "url('/laceback02.png')",
+        backgroundRepeat: "repeat-x",
+        backgroundPosition: "bottom",
+        backgroundSize: "auto 128px" // scale to container height and repeat horizontally
+      }}
+    />
+  </div>
+);
 
 const AVAILABLE_CAGES = [
   { id: 'inverse', name: 'Inverse Device', icon: ScanLine },
@@ -37,7 +52,7 @@ const formatTime = (totalSeconds) => {
   const h = Math.floor((totalSeconds % 86400) / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
-  
+
   if (d > 0) return `${d}d ${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
   if (h > 0) return `${h.toString().padStart(2, '0')}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
   return `${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
@@ -45,25 +60,25 @@ const formatTime = (totalSeconds) => {
 
 // --- COMPOSANT DE CHEMIN : DISCIPLINE (CHASTETÉ) ---
 const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
-  const [step, setStep] = useState('inventory'); 
+  const [step, setStep] = useState('inventory');
   const [inventory, setInventory] = useState([]);
   const [selectedCage, setSelectedCage] = useState(null);
   const [vowType, setVowType] = useState(null);
   const [durationStr, setDurationStr] = useState('');
-  
+
   const [endTime, setEndTime] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
 
   // Tarot Animation States
   const [tarotContext, setTarotContext] = useState(null);
-  const [tarotPhase, setTarotPhase] = useState('shuffling'); 
+  const [tarotPhase, setTarotPhase] = useState('shuffling');
   const [tarotResult, setTarotResult] = useState({ title: '', icon: null, subtitle: '' });
   const [deckSize, setDeckSize] = useState(0);
   const [pickedCardIndex, setPickedCardIndex] = useState(null);
 
   // Sélection des cages dans l'inventaire
   const toggleCage = (cage) => {
-    setInventory(prev => 
+    setInventory(prev =>
       prev.some(c => c.id === cage.id) ? prev.filter(c => c.id !== cage.id) : [...prev, cage]
     );
   };
@@ -75,11 +90,11 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
     setTarotPhase('shuffling');
     setDeckSize(inventory.length > 3 ? inventory.length : 3);
     setPickedCardIndex(null);
-    
+
     const targetCage = inventory[Math.floor(Math.random() * inventory.length)];
     setTarotResult({ title: targetCage.name, icon: targetCage.icon, subtitle: 'The Apparatus' });
     setSelectedCage(targetCage);
-    
+
     setTimeout(() => {
       setTarotPhase('spreading');
       setTimeout(() => setTarotPhase('waiting'), 1000);
@@ -97,7 +112,7 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
 
     let finalSecs = 0;
     let finalStr = '';
-    
+
     if (vow === 'Short') {
       const h = Math.floor(Math.random() * 24) + 1;
       finalSecs = h * 3600;
@@ -114,7 +129,7 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
 
     setTarotResult({ title: finalStr, icon: Hourglass, subtitle: 'The Binding Time', secs: finalSecs });
     setDurationStr(finalStr);
-    
+
     setTimeout(() => {
       setTarotPhase('spreading');
       setTimeout(() => setTarotPhase('waiting'), 1000);
@@ -123,10 +138,10 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
 
   // Clic sur une carte
   const handleCardPick = (index) => {
-    if (tarotPhase !== 'waiting') return; 
+    if (tarotPhase !== 'waiting') return;
     setPickedCardIndex(index);
     setTarotPhase('picked');
-    
+
     setTimeout(() => {
       setTarotPhase('flipping');
       setTimeout(() => {
@@ -222,9 +237,10 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
 
   return (
     <div className="max-w-2xl mx-auto p-4 md:p-8 animate-in slide-in-from-bottom-10 duration-700">
-      
+
       {/* CSS Intégré pour les effets 3D et le mélange */}
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .perspective-1000 { perspective: 1000px; }
         .card-inner {
           position: relative; width: 100%; height: 100%;
@@ -269,7 +285,7 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
             {AVAILABLE_CAGES.map(cage => {
               const isSelected = inventory.some(c => c.id === cage.id);
               return (
-                <button 
+                <button
                   key={cage.id}
                   onClick={() => toggleCage(cage)}
                   className={`p-4 flex flex-col items-center justify-center gap-3 border rounded-sm transition-all duration-300 ${isSelected ? 'bg-amber-900/40 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-zinc-900/50 border-amber-900/30 hover:border-amber-600'}`}
@@ -282,7 +298,7 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
           </div>
 
           <div className="flex justify-center pt-8">
-            <button 
+            <button
               onClick={runCageAnimation}
               disabled={inventory.length === 0}
               className={`px-8 py-4 font-serif text-xl tracking-[0.2em] uppercase transition-all duration-500 border ${inventory.length > 0 ? 'bg-amber-900/20 text-amber-400 border-amber-500 hover:bg-amber-900/40 shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'bg-zinc-900 text-zinc-600 border-zinc-800 cursor-not-allowed'}`}
@@ -297,8 +313,8 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
       {step === 'tarot_draw' && (
         <div className="py-16 flex flex-col items-center justify-center text-center animate-in fade-in duration-1000 overflow-hidden relative min-h-[500px]">
           <h2 className="font-serif text-3xl text-amber-500 tracking-widest uppercase mb-16 relative z-30 drop-shadow-[0_0_10px_rgba(245,158,11,0.3)]">
-            {tarotPhase === 'waiting' 
-              ? 'Draw Your Fate' 
+            {tarotPhase === 'waiting'
+              ? 'Draw Your Fate'
               : tarotContext === 'cage' ? 'Consulting the Arcana...' : 'Reading the Threads...'}
           </h2>
 
@@ -307,25 +323,25 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
               const center = (deckSize - 1) / 2;
               const offset = i - center;
               const isLargeDeck = deckSize > 10;
-              
+
               let cardWrapperStyle = {};
               let containerClasses = `absolute w-32 h-48 md:w-40 md:h-56 perspective-1000 ${tarotPhase === 'flipping' || tarotPhase === 'done' ? (pickedCardIndex === i ? 'is-flipped' : '') : ''}`;
 
               if (tarotPhase === 'shuffling') {
                 cardWrapperStyle = { animationDelay: `-${(i * 0.15).toFixed(2)}s`, zIndex: i };
                 containerClasses += " anim-shuffle-active";
-              } 
+              }
               else if (tarotPhase === 'spreading' || tarotPhase === 'waiting') {
                 const rot = offset * (isLargeDeck ? 4 : 8);
                 const tx = offset * (isLargeDeck ? 12 : 35);
                 const ty = Math.abs(offset) * (isLargeDeck ? 1.5 : 4);
-                
+
                 cardWrapperStyle = {
                   transform: `translate(${tx}px, ${ty}px) rotate(${rot}deg)`,
                   transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
                   zIndex: i
                 };
-                
+
                 if (tarotPhase === 'waiting') {
                   containerClasses += " cursor-pointer hover:-translate-y-8 hover:scale-110 hover:z-50 hover:drop-shadow-[0_0_30px_rgba(245,158,11,0.8)] hover:brightness-125 transition-all duration-300";
                 }
@@ -382,7 +398,7 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
               <p className="font-serif text-2xl text-amber-400">{selectedCage?.name}</p>
             </div>
           </div>
-          
+
           <h3 className="font-serif text-xl text-amber-500 mb-4">Swear Your Vow</h3>
           <div className="grid grid-cols-1 gap-4">
             <button onClick={() => runTimeAnimation('Short')} className={`${THEME.panel} p-6 flex flex-col items-center group`}>
@@ -405,7 +421,7 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
       {step === 'summary' && (
         <div className="space-y-12 text-center animate-in fade-in zoom-in-95 duration-1000 py-8">
           <h2 className="font-serif text-3xl text-amber-500 tracking-widest uppercase">The Verdict</h2>
-          
+
           <div className="flex flex-col md:flex-row gap-8 justify-center items-center">
             <div className="w-48 h-72 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
               <TarotCardFaceUp title={selectedCage?.name} subtitle="The Apparatus" icon={selectedCage?.icon} />
@@ -415,8 +431,8 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
               <TarotCardFaceUp title={durationStr} subtitle="The Binding Time" icon={Hourglass} />
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={handleProceedToTimer}
             className="w-full max-w-md mx-auto py-5 bg-amber-900/20 hover:bg-amber-900/40 border border-amber-500 text-amber-400 font-serif tracking-[0.2em] uppercase transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)]"
           >
@@ -433,11 +449,11 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
             {step === 'prep' ? 'Preparation Phase' : 'The Seal is Active'}
           </h2>
           <p className="text-amber-700/80 italic mb-10 max-w-sm">
-            {step === 'prep' 
-              ? `You have exactly 2 minutes to secure yourself within the ${selectedCage?.name}.` 
+            {step === 'prep'
+              ? `You have exactly 2 minutes to secure yourself within the ${selectedCage?.name}.`
               : `You are bound. The timer will release you when the debt of time is paid.`}
           </p>
-          
+
           <div className="font-mono text-5xl md:text-6xl text-amber-400 mb-4 tracking-wider drop-shadow-[0_0_10px_rgba(245,158,11,0.3)]">
             {formatTime(timeLeft)}
           </div>
@@ -445,7 +461,7 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
             {step === 'prep' ? 'Until Lock' : 'Remaining'}
           </p>
 
-          <button 
+          <button
             onClick={handleBreakVow}
             className="group flex items-center gap-2 px-6 py-3 border border-red-900/50 hover:border-red-500 bg-red-950/30 text-red-700 hover:text-red-500 transition-all uppercase tracking-widest text-xs"
           >
@@ -463,7 +479,7 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
             You have shattered the seal of trust. The Domina expects endurance, but you have offered only frailty. Your weakness is profoundly disappointing.
           </p>
           <p className="text-red-600 uppercase tracking-widest text-sm mb-10 font-bold">No tokens awarded.</p>
-          <button 
+          <button
             onClick={back}
             className="px-8 py-4 border border-red-700 text-red-500 hover:bg-red-900/30 uppercase tracking-[0.2em] transition-all"
           >
@@ -478,7 +494,7 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
           <Sparkles size={48} className="text-amber-400 mb-6" />
           <h2 className="font-serif text-3xl text-amber-400 mb-4">Vow Fulfilled</h2>
           <p className="text-amber-600 mb-8 max-w-md">You have endured the time set by the Rite. Your devotion is recognized and your treasury expands.</p>
-          <button 
+          <button
             onClick={handleCompletion}
             className="px-8 py-4 bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold tracking-[0.2em] uppercase transition-all"
           >
@@ -492,31 +508,34 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
 
 // --- AGE VERIFICATION GATE ---
 const AgeVerificationGate = ({ onVerified }) => (
-  <div className={`min-h-screen ${THEME.bg} flex flex-col items-center justify-center p-4 relative overflow-hidden`}>
-    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-950/20 via-zinc-950 to-zinc-950 pointer-events-none"></div>
-    <div className="max-w-md w-full border border-amber-500/30 bg-zinc-900/80 backdrop-blur-sm p-8 text-center shadow-[0_0_30px_rgba(245,158,11,0.1)] animate-in zoom-in duration-1000 relative z-10">
-      <ShieldAlert size={56} className="mx-auto text-amber-500 mb-6" />
-      <h1 className="font-serif text-3xl text-amber-500 mb-4 uppercase tracking-widest drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]">Restricted Sanctuary</h1>
-      <p className="text-amber-700/80 mb-8 leading-relaxed">
-        This domain contains mature themes of devotion, discipline, and confinement. 
-        You must be at least 18 years of age to proceed.
-      </p>
-      <div className="flex flex-col gap-4">
-        <button 
-          onClick={onVerified}
-          className="w-full py-4 bg-amber-900/20 hover:bg-amber-900/40 border border-amber-500 text-amber-400 font-serif tracking-[0.2em] uppercase transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_30px_rgba(245,158,11,0.4)]"
-        >
-          I am +18
-        </button>
-        <a 
-          href="https://www.google.com"
-          className="w-full py-4 border border-zinc-800 text-zinc-600 hover:bg-zinc-900 hover:text-zinc-400 font-serif tracking-[0.1em] uppercase transition-all"
-        >
-          I am under 18 (Leave)
-        </a>
+  <>
+    <div className={`min-h-screen ${THEME.bg} flex flex-col items-center justify-center p-4 relative overflow-hidden`}>
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-950/20 via-zinc-950 to-zinc-950 pointer-events-none"></div>
+      <div className="max-w-md w-full border border-amber-500/30 bg-zinc-900/80 backdrop-blur-sm p-8 text-center shadow-[0_0_30px_rgba(245,158,11,0.1)] animate-in zoom-in duration-1000 relative z-10">
+        <ShieldAlert size={56} className="mx-auto text-amber-500 mb-6" />
+        <h1 className="font-serif text-3xl text-amber-500 mb-4 uppercase tracking-widest drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]">Restricted Sanctuary</h1>
+        <p className="text-amber-700/80 mb-8 leading-relaxed">
+          This domain contains mature themes of devotion, discipline, and confinement.
+          You must be at least 18 years of age to proceed.
+        </p>
+        <div className="flex flex-col gap-4">
+          <button
+            onClick={onVerified}
+            className="w-full py-4 bg-amber-900/20 hover:bg-amber-900/40 border border-amber-500 text-amber-400 font-serif tracking-[0.2em] uppercase transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_30px_rgba(245,158,11,0.4)]"
+          >
+            I am +18
+          </button>
+          <a
+            href="https://www.google.com"
+            className="w-full py-4 border border-zinc-800 text-zinc-600 hover:bg-zinc-900 hover:text-zinc-400 font-serif tracking-[0.1em] uppercase transition-all"
+          >
+            I am under 18 (Leave)
+          </a>
+        </div>
       </div>
     </div>
-  </div>
+    <LaceDecoration />
+  </>
 );
 
 // --- INTRO PANEL ---
@@ -594,74 +613,77 @@ const IntroPanel = ({ onProceed }) => {
   };
 
   return (
-    <div 
-      onClick={!isDone ? handleSkip : undefined}
-      className={`min-h-screen ${THEME.bg} flex flex-col items-center justify-center p-4 relative overflow-hidden cursor-pointer select-none`}
-      title={!isDone ? "Click anywhere to reveal text" : undefined}
-    >
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-950/20 via-zinc-950 to-zinc-950 pointer-events-none"></div>
-      <div 
-        className="max-w-2xl w-full border border-amber-500/30 bg-zinc-900/80 backdrop-blur-sm p-8 md:p-12 text-center shadow-[0_0_30px_rgba(245,158,11,0.1)] relative z-10"
-        onClick={(e) => e.stopPropagation()}
+    <>
+      <div
+        onClick={!isDone ? handleSkip : undefined}
+        className={`min-h-screen ${THEME.bg} flex flex-col items-center justify-center p-4 relative overflow-hidden cursor-pointer select-none`}
+        title={!isDone ? "Click anywhere to reveal text" : undefined}
       >
-        <h2 className="font-serif text-3xl md:text-4xl text-amber-500 mb-6 uppercase tracking-widest drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]">
-          The Path of Devotion
-        </h2>
-        
-        <div className="space-y-6 text-amber-700/80 text-sm md:text-base leading-relaxed mb-10 text-left min-h-[300px] md:min-h-[200px]">
-          {processedParagraphs.map((p, pIdx) => {
-            const pStart = p.segments[0].start;
-            if (visibleLength < pStart) return null;
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-950/20 via-zinc-950 to-zinc-950 pointer-events-none"></div>
+        <div
+          className="max-w-2xl w-full border border-amber-500/30 bg-zinc-900/80 backdrop-blur-sm p-8 md:p-12 text-center shadow-[0_0_30px_rgba(245,158,11,0.1)] relative z-10"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 className="font-serif text-3xl md:text-4xl text-amber-500 mb-6 uppercase tracking-widest drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]">
+            The Path of Devotion
+          </h2>
 
-            const isCenterItalic = p.type === 'italic-center';
-            const pClass = isCenterItalic 
-              ? "text-center italic text-amber-600/80 mt-8 font-serif text-lg" 
-              : "";
+          <div className="space-y-6 text-amber-700/80 text-sm md:text-base leading-relaxed mb-10 text-left min-h-[300px] md:min-h-[200px]">
+            {processedParagraphs.map((p, pIdx) => {
+              const pStart = p.segments[0].start;
+              if (visibleLength < pStart) return null;
 
-            return (
-              <p key={pIdx} className={pClass}>
-                {p.segments.map((s, sIdx) => {
-                  if (visibleLength <= s.start) return null;
-                  
-                  const textToShow = s.text.slice(0, visibleLength - s.start);
-                  const isCursorHere = !isDone && visibleLength >= s.start && visibleLength < s.end;
+              const isCenterItalic = p.type === 'italic-center';
+              const pClass = isCenterItalic
+                ? "text-center italic text-amber-600/80 mt-8 font-serif text-lg"
+                : "";
 
-                  return (
-                    <span key={sIdx}>
-                      {s.highlight ? (
-                        <strong className="text-amber-500 font-serif font-normal">
-                          {textToShow}
-                        </strong>
-                      ) : (
-                        <span>{textToShow}</span>
-                      )}
-                      {isCursorHere && (
-                        <span className="inline-block w-1.5 h-4 bg-amber-500 ml-0.5 align-middle animate-pulse" />
-                      )}
-                    </span>
-                  );
-                })}
+              return (
+                <p key={pIdx} className={pClass}>
+                  {p.segments.map((s, sIdx) => {
+                    if (visibleLength <= s.start) return null;
+
+                    const textToShow = s.text.slice(0, visibleLength - s.start);
+                    const isCursorHere = !isDone && visibleLength >= s.start && visibleLength < s.end;
+
+                    return (
+                      <span key={sIdx}>
+                        {s.highlight ? (
+                          <strong className="text-amber-500 font-serif font-normal">
+                            {textToShow}
+                          </strong>
+                        ) : (
+                          <span>{textToShow}</span>
+                        )}
+                        {isCursorHere && (
+                          <span className="inline-block w-1.5 h-4 bg-amber-500 ml-0.5 align-middle animate-pulse" />
+                        )}
+                      </span>
+                    );
+                  })}
+                </p>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-col items-center gap-4">
+            <button
+              onClick={handleProceedClick}
+              className="w-full md:w-auto px-12 py-4 bg-amber-600 text-zinc-950 font-bold tracking-[0.2em] uppercase transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_30px_rgba(245,158,11,0.4)] hover:bg-amber-500"
+            >
+              {isDone ? "Enter the Sanctuary" : "Reveal Text"}
+            </button>
+
+            {!isDone && (
+              <p className="text-zinc-600 text-xs tracking-widest uppercase hover:text-zinc-400 transition-colors animate-pulse">
+                [ Click anywhere to skip typing ]
               </p>
-            );
-          })}
-        </div>
-
-        <div className="flex flex-col items-center gap-4">
-          <button 
-            onClick={handleProceedClick}
-            className="w-full md:w-auto px-12 py-4 bg-amber-600 text-zinc-950 font-bold tracking-[0.2em] uppercase transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_30px_rgba(245,158,11,0.4)] hover:bg-amber-500"
-          >
-            {isDone ? "Enter the Sanctuary" : "Reveal Text"}
-          </button>
-          
-          {!isDone && (
-            <p className="text-zinc-600 text-xs tracking-widest uppercase hover:text-zinc-400 transition-colors animate-pulse">
-              [ Click anywhere to skip typing ]
-            </p>
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </div>
+      <LaceDecoration />
+    </>
   );
 };
 
@@ -677,10 +699,10 @@ const AuthModal = ({ onClose }) => {
       setLoading(true);
       const dummyEmail = `${authName.trim().toLowerCase()}@dominaritual.com`;
       let { error } = await supabase.auth.signInWithPassword({ email: dummyEmail, password: authPass });
-      
+
       if (error) {
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
-          email: dummyEmail, 
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: dummyEmail,
           password: authPass
         });
         if (signUpError) {
@@ -688,7 +710,7 @@ const AuthModal = ({ onClose }) => {
           setLoading(false);
           return;
         }
-        
+
         if (signUpData.user) {
           await supabase.from('profiles').insert([
             { id: signUpData.user.id, username: authName.trim() }
@@ -711,7 +733,7 @@ const AuthModal = ({ onClose }) => {
         <form onSubmit={handleAuth} className="space-y-4">
           <div className="relative">
             <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900" />
-            <input 
+            <input
               type="text" value={authName} onChange={(e) => setAuthName(e.target.value)}
               placeholder="Your Alias..." required
               className="w-full bg-zinc-950 border border-amber-900/50 p-4 pl-12 text-amber-100 placeholder:text-amber-900/50 focus:outline-none focus:border-amber-500"
@@ -719,7 +741,7 @@ const AuthModal = ({ onClose }) => {
           </div>
           <div className="relative">
             <Key size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900" />
-            <input 
+            <input
               type="password" value={authPass} onChange={(e) => setAuthPass(e.target.value)}
               placeholder="Secret Key..." required
               className="w-full bg-zinc-950 border border-amber-900/50 p-4 pl-12 text-amber-100 placeholder:text-amber-900/50 focus:outline-none focus:border-amber-500"
@@ -742,7 +764,7 @@ export default function App() {
   const [tokens, setTokens] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
@@ -837,11 +859,11 @@ export default function App() {
         </div>
       </div>
 
-      <button 
+      <button
         onClick={async () => {
           await supabase.auth.signOut();
           setView('hub');
-        }} 
+        }}
         className="w-full py-4 border border-red-900/50 text-red-700 hover:bg-red-900/20 hover:text-red-500 font-serif tracking-[0.2em] uppercase transition-all"
       >
         Sever Binding (Logout)
@@ -880,17 +902,47 @@ export default function App() {
 
       {/* Récompense Centrale */}
       <section className="flex justify-center px-4">
-        <button onClick={() => { if(tokens >= 100) setView('reward'); }} className={`w-full max-w-md p-8 text-center transition-all duration-700 ${tokens >= 100 ? 'bg-amber-900/10 border border-amber-600' : 'bg-zinc-900/30 border border-amber-900/20 opacity-60'}`}>
+        <button onClick={() => { if (tokens >= 100) setView('reward'); }} className={`w-full max-w-md p-8 text-center transition-all duration-700 ${tokens >= 100 ? 'bg-amber-900/10 border border-amber-600' : 'bg-zinc-900/30 border border-amber-900/20 opacity-60'}`}>
           <Sparkles size={32} className={`mx-auto mb-4 ${tokens >= 100 ? 'text-amber-400' : 'text-amber-800'}`} />
           <h2 className={`font-serif text-2xl uppercase mb-2 ${tokens >= 100 ? 'text-amber-400' : 'text-amber-800'}`}>Divine Reward</h2>
         </button>
       </section>
 
       {/* Spoil Me Footer */}
-      <section className="pt-12 pb-8 border-t border-amber-900/20 flex justify-center">
-        <button className="px-12 py-5 group flex border border-amber-700/50 hover:border-amber-400 text-amber-500 font-serif text-xl uppercase">
+      <section className="pt-12 pb-8 border-t border-amber-900/20 flex flex-col items-center gap-6">
+        <a 
+          href="https://youpay.me/Dominaritual623" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="px-12 py-5 group flex border border-amber-700/50 hover:border-amber-400 text-amber-500 font-serif text-xl uppercase transition-colors"
+        >
           <Gift size={24} className="mr-4 text-amber-600 group-hover:text-amber-400" /> Spoil Me
-        </button>
+        </a>
+
+        <div className="flex gap-4">
+          <a
+            href="https://x.com/domina_ritual"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Twitter / X"
+            className="p-3 border border-amber-900/40 hover:border-amber-500 text-amber-600 hover:text-amber-400 transition-all flex items-center justify-center rounded-sm"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </a>
+          <a
+            href="https://discord.gg/qRmwseJv"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Discord"
+            className="p-3 border border-amber-900/40 hover:border-amber-500 text-amber-600 hover:text-amber-400 transition-all flex items-center justify-center rounded-sm"
+          >
+            <svg viewBox="0 0 127.14 96.36" aria-hidden="true" className="w-5 h-5 fill-current">
+              <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.5-5c.89-.65,1.76-1.34,2.58-2.06a75.48,75.48,0,0,0,65.8,0c.82.72,1.69,1.41,2.58,2.06a68.4,68.4,0,0,1-10.5,5,77.7,77.7,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31.42-18.83C129.9,49.12,123.82,26.31,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"/>
+            </svg>
+          </a>
+        </div>
       </section>
     </main>
   );
@@ -904,47 +956,50 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen ${THEME.bg} text-zinc-300 font-sans selection:bg-amber-900/50 overflow-x-hidden`}>
-      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
-      <header className={`sticky top-0 z-40 bg-zinc-950/80 backdrop-blur-md flex justify-between items-center p-4 md:p-6 ${THEME.header}`}>
-        <div className="flex items-center gap-2 md:gap-4">
-          <button onClick={() => setMenuOpen(true)} className="text-amber-700 p-2 hover:text-amber-500 transition-colors"><Menu size={28} /></button>
-        </div>
-        <h1 onClick={() => setView('hub')} className="text-xl md:text-2xl font-serif text-amber-500 tracking-[0.1em] md:tracking-[0.25em] uppercase cursor-pointer">Domina Ritual</h1>
-        <div className="flex gap-2 md:gap-6 items-center">
-          <div className="text-right hidden md:block">
-            <span className="text-amber-700/60 text-xs uppercase tracking-widest block mb-1">Treasury</span>
-            <span className="text-amber-500 font-mono text-lg">{tokens} ⏀</span>
+    <>
+      <div className={`min-h-screen ${THEME.bg} text-zinc-300 font-sans selection:bg-amber-900/50 overflow-x-hidden pb-12`}>
+        {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+        <header className={`sticky top-0 z-40 bg-black/80 backdrop-blur-md flex justify-between items-center p-4 md:p-6 ${THEME.header}`}>
+          <div className="flex items-center gap-2 md:gap-4">
+            <button onClick={() => setMenuOpen(true)} className="text-amber-700 p-2 hover:text-amber-500 transition-colors"><Menu size={28} /></button>
           </div>
-          <div className="flex items-center gap-2">
-            {!user ? (
-              <button onClick={() => setShowAuthModal(true)} className="text-amber-500 font-serif uppercase tracking-widest text-[10px] md:text-xs border border-amber-900/50 px-3 md:px-4 py-2 hover:bg-amber-900/20 transition-colors shadow-[0_0_10px_rgba(245,158,11,0.1)]">
-                Login
-              </button>
-            ) : (
-              <button onClick={() => setView('profile')} className="flex items-center gap-2 text-left group">
-                <div className="text-right hidden sm:block mr-2"><span className="text-amber-700/60 text-xs uppercase tracking-widest block group-hover:text-amber-500 transition-colors">{profile?.username || 'Soul'}</span></div>
-                <div className={`w-10 h-10 rounded-full border flex items-center justify-center border-amber-500 bg-amber-900/20 group-hover:bg-amber-800/40 transition-colors`}>
-                  <User size={18} className="text-amber-400" />
-                </div>
-              </button>
-            )}
+          <h1 onClick={() => setView('hub')} className="text-xl md:text-2xl font-serif text-amber-500 tracking-[0.1em] md:tracking-[0.25em] uppercase cursor-pointer">Domina Ritual</h1>
+          <div className="flex gap-2 md:gap-6 items-center">
+            <div className="text-right hidden md:block">
+              <span className="text-amber-700/60 text-xs uppercase tracking-widest block mb-1">Treasury</span>
+              <span className="text-amber-500 font-mono text-lg">{tokens} ⏀</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {!user ? (
+                <button onClick={() => setShowAuthModal(true)} className="text-amber-500 font-serif uppercase tracking-widest text-[10px] md:text-xs border border-amber-900/50 px-3 md:px-4 py-2 hover:bg-amber-900/20 transition-colors shadow-[0_0_10px_rgba(245,158,11,0.1)]">
+                  Login
+                </button>
+              ) : (
+                <button onClick={() => setView('profile')} className="flex items-center gap-2 text-left group">
+                  <div className="text-right hidden sm:block mr-2"><span className="text-amber-700/60 text-xs uppercase tracking-widest block group-hover:text-amber-500 transition-colors">{profile?.username || 'Soul'}</span></div>
+                  <div className={`w-10 h-10 rounded-full border flex items-center justify-center border-amber-500 bg-amber-900/20 group-hover:bg-amber-800/40 transition-colors`}>
+                    <User size={18} className="text-amber-400" />
+                  </div>
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {menuOpen && (
-        <div className="fixed inset-0 bg-zinc-950/98 z-50 p-8 flex flex-col">
-          <button onClick={() => setMenuOpen(false)} className="self-end text-amber-700"><X size={36} /></button>
-          <nav className="flex flex-col items-center flex-1 gap-10 text-3xl font-serif text-amber-500/50 uppercase mt-20">
-            <button onClick={() => { setView('hub'); setMenuOpen(false); }}>Sanctuary</button>
-            {profile?.role === 'admin' && <button onClick={() => { setView('admin'); setMenuOpen(false); }} className="text-amber-400">Domina Dashboard</button>}
-            {user && <button onClick={() => { supabase.auth.signOut(); setMenuOpen(false); }} className="text-red-900/50 hover:text-red-500 mt-8 text-xl">Sever Soul (Logout)</button>}
-          </nav>
-        </div>
-      )}
+        {menuOpen && (
+          <div className="fixed inset-0 bg-black/98 z-50 p-8 flex flex-col">
+            <button onClick={() => setMenuOpen(false)} className="self-end text-amber-700"><X size={36} /></button>
+            <nav className="flex flex-col items-center flex-1 gap-10 text-3xl font-serif text-amber-500/50 uppercase mt-20">
+              <button onClick={() => { setView('hub'); setMenuOpen(false); }}>Sanctuary</button>
+              {profile?.role === 'admin' && <button onClick={() => { setView('admin'); setMenuOpen(false); }} className="text-amber-400">Domina Dashboard</button>}
+              {user && <button onClick={() => { supabase.auth.signOut(); setMenuOpen(false); }} className="text-red-900/50 hover:text-red-500 mt-8 text-xl">Sever Soul (Logout)</button>}
+            </nav>
+          </div>
+        )}
 
-      {renderContent()}
-    </div>
+        {renderContent()}
+      </div>
+      <LaceDecoration />
+    </>
   );
 }

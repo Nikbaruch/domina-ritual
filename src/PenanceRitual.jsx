@@ -22,12 +22,40 @@ const MODES = [
 ];
 
 const PUNISHMENTS = [
-  { id: 'spanking', name: 'Self-Administered Spanking' },
+  { id: 'spanking', name: 'Spanking' },
   { id: 'clamps', name: 'Nipple Clamps' },
   { id: 'ballbusting', name: 'Light Ballbusting' },
   { id: 'corner', name: 'Corner Time' },
   { id: 'lines', name: 'Writing Lines' }
 ];
+
+// Weighted punishment selection depending on selected mode (soft, mid, hard)
+const getWeightedPunishment = (modeId) => {
+  // Index mapping: 0: spanking, 1: clamps, 2: ballbusting, 3: corner, 4: lines
+  let weights = [1, 1, 1, 1, 1]; // default flat weights
+  
+  if (modeId === 'soft') {
+    // lines (4) and corner (3) high; spanking (0), clamps (1), ballbusting (2) low
+    weights = [1, 1, 1, 6, 6]; 
+  } else if (modeId === 'mid') {
+    // clamps (1) and ballbusting (2) high; others low
+    weights = [2, 7, 7, 2, 2];
+  } else if (modeId === 'hard') {
+    // spanking (0) is very high; others low
+    weights = [8, 2, 2, 2, 2];
+  }
+  
+  const totalWeight = weights.reduce((acc, w) => acc + w, 0);
+  let random = Math.random() * totalWeight;
+  
+  for (let i = 0; i < PUNISHMENTS.length; i++) {
+    if (random < weights[i]) {
+      return PUNISHMENTS[i];
+    }
+    random -= weights[i];
+  }
+  return PUNISHMENTS[0];
+};
 
 const INTENSITIES = {
   spanking: {
@@ -77,18 +105,86 @@ const TarotCardFaceDown = () => (
   </div>
 );
 
-const TarotCardFaceUp = ({ title, subtitle }) => (
-  <div className="w-full h-full border-2 border-amber-400 bg-zinc-900 rounded-sm flex flex-col items-center justify-center p-4 shadow-[inset_0_0_30px_rgba(245,158,11,0.15)] relative">
-    <div className="absolute inset-1 border border-amber-500/30 rounded-sm pointer-events-none" />
-    <p className="text-amber-700 uppercase tracking-widest text-[10px] mb-4 font-bold text-center">{subtitle}</p>
-    <div className="bg-amber-950/30 p-2 rounded-full border border-amber-900/50 mb-4 shadow-[inset_0_0_15px_rgba(245,158,11,0.1)]">
-      <Flame size={32} className="text-amber-400" />
+// Resolve specific asset image based on punishment type and text description
+const getCardAsset = (cardId, title) => {
+  if (!cardId) return null;
+  const text = title ? title.toLowerCase() : '';
+
+  if (cardId === 'spanking') {
+    if (text.includes('hairbrush')) return '/spanking-hairbrush.png';
+    if (text.includes('spoon')) return '/spanking-spoon.png';
+    if (text.includes('cane')) return '/spanking-cane.png';
+    if (text.includes('belt')) return '/spanking-belt.png';
+    return '/hand-spanking.png';
+  }
+  
+  if (cardId === 'clamps') {
+    if (text.includes('heavy')) return '/clamps-heavy.png';
+    if (text.includes('light')) return '/clamps-light.png';
+    return '/x-clamps.png';
+  }
+
+  if (cardId === 'ballbusting') {
+    if (text.includes('flick') || text.includes('finger')) return '/x-ballbsutingFinger.png';
+    if (text.includes('crop')) return '/X-ballbusting-crop.png';
+    if (text.includes('hand') || text.includes('slap')) return '/ballbusting-hand.png';
+    return '/x-ballbusting.png';
+  }
+
+  if (cardId === 'corner') {
+    if (text.includes('rice')) return '/corner-rice.png';
+    if (text.includes('nose') || text.includes('wall')) return '/corner-wall.png';
+    if (text.includes('kneel')) return '/corner-kneeling.png';
+    return '/corner-standing.png';
+  }
+
+  if (cardId === 'lines') {
+    return '/x-writing.png';
+  }
+
+  return null;
+};
+
+const TarotCardFaceUp = ({ title, subtitle, cardId }) => {
+  const picSrc = getCardAsset(cardId, title);
+
+  return (
+    <div className="w-full h-full border-2 border-amber-400 bg-zinc-900 rounded-sm flex flex-col items-center justify-center p-4 shadow-[inset_0_0_30px_rgba(245,158,11,0.15)] relative">
+      <div className="absolute inset-1 border border-amber-500/30 rounded-sm pointer-events-none" />
+      <p className="text-amber-700 uppercase tracking-widest text-[10px] mb-4 font-bold text-center">{subtitle}</p>
+      
+      {picSrc ? (
+        <div className="w-16 h-16 mb-4 flex items-center justify-center overflow-hidden">
+          <img 
+            src={picSrc} 
+            alt={title} 
+            className="w-full h-full object-contain" 
+            onError={(e) => {
+              // Fallback if the custom asset PNG is not created yet
+              e.target.style.display = 'none';
+              const parent = e.target.parentElement;
+              if (parent) {
+                parent.innerHTML = `
+                  <div class="bg-amber-950/30 p-2 rounded-full border border-amber-900/50 shadow-[inset_0_0_15px_rgba(245,158,11,0.1)]">
+                    <svg class="text-amber-400 w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                  </div>
+                `;
+              }
+            }}
+          />
+        </div>
+      ) : (
+        <div className="bg-amber-950/30 p-2 rounded-full border border-amber-900/50 mb-4 shadow-[inset_0_0_15px_rgba(245,158,11,0.1)]">
+          <Flame size={32} className="text-amber-400" />
+        </div>
+      )}
+      
+      <h3 className="font-serif text-sm md:text-base text-amber-500 text-center leading-snug drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]">
+        {title}
+      </h3>
     </div>
-    <h3 className="font-serif text-lg md:text-xl text-amber-500 text-center leading-snug drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]">
-      {title}
-    </h3>
-  </div>
-);
+  );
+};
 
 export default function PenanceRitual({ back, addTokens, user, profile, requireAuth }) {
   const [step, setStep] = useState('mode_selection');
@@ -109,7 +205,7 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
   // Summary state
   const [photoProofSubmitted, setPhotoProofSubmitted] = useState(false);
 
-  const startDraw = (drawNumber, previousDraw) => {
+  const startDraw = (drawNumber, previousDraw, currentMode = mode) => {
     setCurrentDrawType(drawNumber);
     setStep('tarot_draw');
     setTarotPhase('shuffling');
@@ -118,11 +214,11 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
 
     let result = '';
     if (drawNumber === 1) {
-      const p = PUNISHMENTS[Math.floor(Math.random() * PUNISHMENTS.length)];
+      const p = getWeightedPunishment(currentMode.id);
       result = p;
       setTempResult(p);
     } else if (drawNumber === 2) {
-      const options = INTENSITIES[previousDraw.id][mode.id];
+      const options = INTENSITIES[previousDraw.id][currentMode.id];
       const i = options[Math.floor(Math.random() * options.length)];
       result = i;
       setTempResult(i);
@@ -135,7 +231,7 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
     setTimeout(() => {
       setTarotPhase('spreading');
       setTimeout(() => setTarotPhase('waiting'), 1000);
-    }, 3500);
+    }, 1800); // Shuffling duration shortened from 3.5s to 1.8s
   };
 
   const handleCardPick = (index) => {
@@ -150,10 +246,10 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
         setTimeout(() => {
           if (currentDrawType === 1) {
             setDraw1(tempResult);
-            startDraw(2, tempResult);
+            startDraw(2, tempResult, mode);
           } else if (currentDrawType === 2) {
             setDraw2(tempResult);
-            startDraw(3, null);
+            startDraw(3, null, mode);
           } else if (currentDrawType === 3) {
             setDraw3(tempResult);
             setStep('summary');
@@ -165,7 +261,7 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
 
   const handleSelectMode = (selectedMode) => {
     setMode(selectedMode);
-    startDraw(1, null);
+    startDraw(1, null, selectedMode);
   };
 
   const handleAcceptPenance = () => {
@@ -244,7 +340,7 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
           75% { transform: translate(55px, -25px) rotate(20deg); z-index: 5; }
           100% { transform: translate(0px, 0px) rotate(0deg); z-index: 10; }
         }
-        .anim-shuffle-active { animation: realShuffle 1.2s infinite cubic-bezier(0.4, 0, 0.2, 1); }
+        .anim-shuffle-active { animation: realShuffle 1.8s infinite cubic-bezier(0.4, 0, 0.2, 1); }
       `}} />
 
       <button onClick={back} className="mb-8 text-amber-700 hover:text-amber-500 flex items-center gap-2 transition-colors uppercase tracking-widest text-xs">
@@ -334,12 +430,15 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
 
               let titleToDisplay = '';
               let subToDisplay = '';
+              let cardId = '';
               if (currentDrawType === 1) {
                 titleToDisplay = tempResult?.name;
                 subToDisplay = 'The Method';
+                cardId = tempResult?.id;
               } else if (currentDrawType === 2) {
                 titleToDisplay = tempResult;
                 subToDisplay = 'The Pain';
+                cardId = draw1?.id;
               } else {
                 titleToDisplay = tempResult;
                 subToDisplay = 'The Humiliation';
@@ -351,7 +450,7 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
                     <div className="card-front"><TarotCardFaceDown /></div>
                     <div className="card-back">
                       {pickedCardIndex === i ? (
-                        <TarotCardFaceUp title={titleToDisplay} subtitle={subToDisplay} />
+                        <TarotCardFaceUp title={titleToDisplay} subtitle={subToDisplay} cardId={cardId} />
                       ) : (
                         <div className="w-full h-full bg-zinc-900 border-2 border-amber-900 rounded-sm"></div>
                       )}
@@ -378,10 +477,10 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
           
           <div className="flex flex-col md:flex-row gap-6 justify-center items-center mt-12 mb-16">
             <div className="w-48 h-72 transform -rotate-6 hover:rotate-0 transition-transform duration-500 hover:z-10">
-              <TarotCardFaceUp title={draw1?.name} subtitle="The Method" />
+              <TarotCardFaceUp title={draw1?.name} subtitle="The Method" cardId={draw1?.id} />
             </div>
             <div className="w-48 h-72 transform hover:-translate-y-4 transition-transform duration-500 hover:z-10 z-10">
-              <TarotCardFaceUp title={draw2} subtitle="The Pain" />
+              <TarotCardFaceUp title={draw2} subtitle="The Pain" cardId={draw1?.id} />
             </div>
             <div className="w-48 h-72 transform rotate-6 hover:rotate-0 transition-transform duration-500 hover:z-10">
               <TarotCardFaceUp title={draw3} subtitle="The Humiliation" />
