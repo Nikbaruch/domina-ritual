@@ -69,12 +69,36 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
   const [endTime, setEndTime] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
 
+  // Sharing feedback
+  const [shareMessage, setShareMessage] = useState('');
+
   // Tarot Animation States
   const [tarotContext, setTarotContext] = useState(null);
   const [tarotPhase, setTarotPhase] = useState('shuffling');
   const [tarotResult, setTarotResult] = useState({ title: '', icon: null, subtitle: '' });
   const [deckSize, setDeckSize] = useState(0);
   const [pickedCardIndex, setPickedCardIndex] = useState(null);
+
+  // Tarot Timeout Refs for skipping/cancelling animations
+  const tarotTimeout1Ref = useRef(null);
+  const tarotTimeout2Ref = useRef(null);
+  const tarotTimeout3Ref = useRef(null);
+
+  const clearTarotTimeouts = () => {
+    if (tarotTimeout1Ref.current) clearTimeout(tarotTimeout1Ref.current);
+    if (tarotTimeout2Ref.current) clearTimeout(tarotTimeout2Ref.current);
+    if (tarotTimeout3Ref.current) clearTimeout(tarotTimeout3Ref.current);
+  };
+
+  const proceedToNextStep = () => {
+    clearTarotTimeouts();
+    if (tarotContext === 'cage') setStep('vow');
+    else setStep('summary');
+  };
+
+  useEffect(() => {
+    return () => clearTarotTimeouts();
+  }, []);
 
   // Sélection des cages dans l'inventaire
   const toggleCage = (cage) => {
@@ -95,9 +119,10 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
     setTarotResult({ title: targetCage.name, icon: targetCage.icon, subtitle: 'The Apparatus' });
     setSelectedCage(targetCage);
 
-    setTimeout(() => {
+    clearTarotTimeouts();
+    tarotTimeout1Ref.current = setTimeout(() => {
       setTarotPhase('spreading');
-      setTimeout(() => setTarotPhase('waiting'), 1000);
+      tarotTimeout2Ref.current = setTimeout(() => setTarotPhase('waiting'), 1000);
     }, 3500);
   };
 
@@ -130,25 +155,35 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
     setTarotResult({ title: finalStr, icon: Hourglass, subtitle: 'The Binding Time', secs: finalSecs });
     setDurationStr(finalStr);
 
-    setTimeout(() => {
+    clearTarotTimeouts();
+    tarotTimeout1Ref.current = setTimeout(() => {
       setTarotPhase('spreading');
-      setTimeout(() => setTarotPhase('waiting'), 1000);
+      tarotTimeout2Ref.current = setTimeout(() => setTarotPhase('waiting'), 1000);
     }, 3500);
   };
 
   // Clic sur une carte
   const handleCardPick = (index) => {
+    if (tarotPhase === 'shuffling' || tarotPhase === 'spreading') {
+      clearTarotTimeouts();
+      setTarotPhase('waiting');
+      return;
+    }
+    if (tarotPhase === 'done') {
+      proceedToNextStep();
+      return;
+    }
     if (tarotPhase !== 'waiting') return;
     setPickedCardIndex(index);
     setTarotPhase('picked');
 
-    setTimeout(() => {
+    clearTarotTimeouts();
+    tarotTimeout1Ref.current = setTimeout(() => {
       setTarotPhase('flipping');
-      setTimeout(() => {
+      tarotTimeout2Ref.current = setTimeout(() => {
         setTarotPhase('done');
-        setTimeout(() => {
-          if (tarotContext === 'cage') setStep('vow');
-          else setStep('summary');
+        tarotTimeout3Ref.current = setTimeout(() => {
+          proceedToNextStep();
         }, 3000);
       }, 800);
     }, 600);
@@ -248,10 +283,16 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
           transform-style: preserve-3d;
         }
         .card-front, .card-back {
-          position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+          position: absolute; width: 100%; height: 100%;
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
         }
         .card-back { transform: rotateY(180deg); }
         .is-flipped .card-inner { transform: rotateY(180deg); }
+        .is-flipped .card-front {
+          visibility: hidden;
+          transition: visibility 0s 0.4s;
+        }
 
         @keyframes realShuffle {
           0% { transform: translate(0px, 0px) rotate(0deg); z-index: 10; }
@@ -311,7 +352,17 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
 
       {/* 2. LE TAROT (ANIMATION COMMUNE) */}
       {step === 'tarot_draw' && (
-        <div className="py-16 flex flex-col items-center justify-center text-center animate-in fade-in duration-1000 overflow-hidden relative min-h-[500px]">
+        <div 
+          onClick={() => {
+            if (tarotPhase === 'shuffling' || tarotPhase === 'spreading') {
+              clearTarotTimeouts();
+              setTarotPhase('waiting');
+            } else if (tarotPhase === 'done') {
+              proceedToNextStep();
+            }
+          }}
+          className="py-16 flex flex-col items-center justify-center text-center animate-in fade-in duration-1000 overflow-hidden relative min-h-[500px] cursor-pointer"
+        >
           <h2 className="font-serif text-3xl text-amber-500 tracking-widest uppercase mb-16 relative z-30 drop-shadow-[0_0_10px_rgba(245,158,11,0.3)]">
             {tarotPhase === 'waiting'
               ? 'Draw Your Fate'
@@ -422,22 +473,134 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
         <div className="space-y-12 text-center animate-in fade-in zoom-in-95 duration-1000 py-8">
           <h2 className="font-serif text-3xl text-amber-500 tracking-widest uppercase">The Verdict</h2>
 
-          <div className="flex flex-col md:flex-row gap-8 justify-center items-center">
-            <div className="w-48 h-72 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
-              <TarotCardFaceUp title={selectedCage?.name} subtitle="The Apparatus" icon={selectedCage?.icon} />
+          {/* New Decree Card */}
+          <div className="max-w-md mx-auto border-2 border-amber-500 bg-zinc-950 p-8 rounded-sm shadow-[0_0_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
+            <div className="absolute inset-1 border border-amber-500/30 rounded-sm pointer-events-none" />
+            
+            {/* Gold style header */}
+            <div className="border-b border-amber-900/30 pb-4 mb-6">
+              <p className="text-amber-700 uppercase tracking-widest text-[10px] mb-1 font-bold">Decree of Discipline</p>
+              <h3 className="font-serif text-2xl text-amber-400 uppercase tracking-wider">The Oracle's Verdict</h3>
             </div>
-            <div className="hidden md:flex items-center justify-center text-amber-900/50"><Lock size={32} /></div>
-            <div className="w-48 h-72 transform rotate-3 hover:rotate-0 transition-transform duration-500">
-              <TarotCardFaceUp title={durationStr} subtitle="The Binding Time" icon={Hourglass} />
-            </div>
-          </div>
 
-          <button
-            onClick={handleProceedToTimer}
-            className="w-full max-w-md mx-auto py-5 bg-amber-900/20 hover:bg-amber-900/40 border border-amber-500 text-amber-400 font-serif tracking-[0.2em] uppercase transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)]"
-          >
-            Accept the Verdict
-          </button>
+            {/* Central emblem */}
+            <div className="flex justify-center mb-6">
+              <div className="bg-amber-950/20 p-6 rounded-full border-2 border-amber-600/50 shadow-[inset_0_0_20px_rgba(245,158,11,0.2)] animate-pulse">
+                {selectedCage && React.createElement(selectedCage.icon, { size: 48, className: "text-amber-400" })}
+              </div>
+            </div>
+
+            {/* Verdict details */}
+            <div className="space-y-4 text-left border-t border-b border-amber-900/30 py-6 mb-6 font-serif">
+              <div className="flex justify-between items-center">
+                <span className="text-amber-700/80 uppercase text-xs tracking-wider">Device Assigned:</span>
+                <span className="text-amber-400 text-lg font-bold">{selectedCage?.name}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-amber-700/80 uppercase text-xs tracking-wider">Duration of Vow:</span>
+                <span className="text-amber-400 text-lg font-bold flex items-center gap-2">
+                  <Hourglass size={16} className="text-amber-500" />
+                  {durationStr}
+                </span>
+              </div>
+            </div>
+
+            {/* Main Action Button */}
+            <button
+              onClick={handleProceedToTimer}
+              className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold tracking-[0.2em] uppercase transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] mb-4"
+            >
+              Accept the Verdict & Begin
+            </button>
+
+            {/* Share buttons */}
+            <div className="flex flex-col gap-2 pt-2 border-t border-amber-900/20">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const text = `🔮 My fate is sealed in the Sanctuary!\n⛓️ Device: ${selectedCage?.name}\n⏳ Vow Duration: ${durationStr}\n\nAccepted under the Domina's gaze.`;
+                    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.origin)}`;
+                    window.open(shareUrl, '_blank');
+                  }}
+                  className="flex-1 py-2 bg-zinc-900 hover:bg-zinc-800 border border-amber-900/50 text-amber-500 text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  Share on X
+                </button>
+                <button
+                  onClick={() => {
+                    const text = `🔮 My fate is sealed in the Sanctuary!\n⛓️ Device: ${selectedCage?.name}\n⏳ Vow Duration: ${durationStr}\n\nAccepted under the Domina's gaze.`;
+                    navigator.clipboard.writeText(`${text}\nJoin the Sanctuary: ${window.location.origin}`);
+                    setShareMessage('Decree details copied to clipboard!');
+                    setTimeout(() => setShareMessage(''), 3000);
+                    window.open('https://discord.gg/qRmwseJv', '_blank');
+                  }}
+                  className="flex-1 py-2 bg-zinc-900 hover:bg-zinc-800 border border-amber-900/50 text-amber-500 text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                >
+                  <svg viewBox="0 0 127.14 96.36" className="w-4 h-4 fill-current">
+                    <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.5-5c.89-.65,1.76-1.34,2.58-2.06a75.48,75.48,0,0,0,65.8,0c.82.72,1.69,1.41,2.58,2.06a68.4,68.4,0,0,1-10.5,5,77.7,77.7,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31.42-18.83C129.9,49.12,123.82,26.31,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"/>
+                  </svg>
+                  Discord
+                </button>
+              </div>
+              <button
+                onClick={() => {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = 800;
+                  canvas.height = 600;
+                  const ctx = canvas.getContext('2d');
+                  ctx.fillStyle = '#09090b';
+                  ctx.fillRect(0, 0, canvas.width, canvas.height);
+                  ctx.strokeStyle = '#d97706';
+                  ctx.lineWidth = 8;
+                  ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+                  ctx.strokeStyle = '#f59e0b';
+                  ctx.lineWidth = 2;
+                  ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+                  ctx.fillStyle = '#f59e0b';
+                  ctx.font = 'bold 36px serif';
+                  ctx.textAlign = 'center';
+                  ctx.fillText('DECREE OF DISCIPLINE', canvas.width / 2, 120);
+                  ctx.fillStyle = '#b45309';
+                  ctx.font = 'italic 18px serif';
+                  ctx.fillText('THE SANCTUARY OF OBEDIENCE', canvas.width / 2, 155);
+                  
+                  // Simple Lock symbol
+                  ctx.strokeStyle = '#f59e0b';
+                  ctx.lineWidth = 4;
+                  ctx.strokeRect(canvas.width / 2 - 25, 260, 50, 40);
+                  ctx.beginPath();
+                  ctx.arc(canvas.width / 2, 260, 20, Math.PI, 0);
+                  ctx.stroke();
+
+                  ctx.fillStyle = '#f59e0b';
+                  ctx.font = 'bold 26px serif';
+                  ctx.fillText(`Assigned: ${selectedCage?.name}`, canvas.width / 2, 370);
+                  ctx.font = '22px sans-serif';
+                  ctx.fillText(`Duration: ${durationStr}`, canvas.width / 2, 420);
+                  ctx.fillStyle = '#78350f';
+                  ctx.font = 'italic 16px sans-serif';
+                  ctx.fillText('Under the Domina\'s gaze, your vow begins.', canvas.width / 2, 490);
+                  ctx.font = '14px monospace';
+                  ctx.fillStyle = '#451a03';
+                  ctx.fillText(window.location.origin, canvas.width / 2, 540);
+                  const link = document.createElement('a');
+                  link.download = 'decree_of_discipline.png';
+                  link.href = canvas.toDataURL();
+                  link.click();
+                }}
+                className="py-2 bg-amber-950/20 hover:bg-amber-950/40 border border-amber-600/30 text-amber-400 text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+              >
+                Download Decree Card Image
+              </button>
+            </div>
+            
+            {shareMessage && (
+              <p className="text-amber-500 text-xs mt-4 animate-pulse">{shareMessage}</p>
+            )}
+          </div>
         </div>
       )}
 

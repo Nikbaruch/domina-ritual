@@ -186,6 +186,28 @@ const TarotCardFaceUp = ({ title, subtitle, cardId }) => {
   );
 };
 
+const PenanceEmblem = ({ cardId, title }) => {
+  const [error, setError] = React.useState(false);
+  const src = getCardAsset(cardId, title);
+
+  React.useEffect(() => {
+    setError(false);
+  }, [src]);
+
+  if (!src || error) {
+    return <Flame size={48} className="text-amber-400" />;
+  }
+
+  return (
+    <img 
+      src={src} 
+      alt={title} 
+      className="w-16 h-16 object-contain" 
+      onError={() => setError(true)}
+    />
+  );
+};
+
 export default function PenanceRitual({ back, addTokens, user, profile, requireAuth }) {
   const [step, setStep] = useState('mode_selection');
   const [mode, setMode] = useState(null);
@@ -202,8 +224,37 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
   const [currentDrawType, setCurrentDrawType] = useState(1); // 1, 2, or 3
   const [tempResult, setTempResult] = useState(null);
 
-  // Summary state
   const [photoProofSubmitted, setPhotoProofSubmitted] = useState(false);
+  const [shareMessage, setShareMessage] = useState('');
+
+  // Tarot Timeout Refs for skipping animations
+  const tarotTimeout1Ref = React.useRef(null);
+  const tarotTimeout2Ref = React.useRef(null);
+  const tarotTimeout3Ref = React.useRef(null);
+
+  const clearTarotTimeouts = () => {
+    if (tarotTimeout1Ref.current) clearTimeout(tarotTimeout1Ref.current);
+    if (tarotTimeout2Ref.current) clearTimeout(tarotTimeout2Ref.current);
+    if (tarotTimeout3Ref.current) clearTimeout(tarotTimeout3Ref.current);
+  };
+
+  const proceedToNextStep = () => {
+    clearTarotTimeouts();
+    if (currentDrawType === 1) {
+      setDraw1(tempResult);
+      startDraw(2, tempResult, mode);
+    } else if (currentDrawType === 2) {
+      setDraw2(tempResult);
+      startDraw(3, null, mode);
+    } else if (currentDrawType === 3) {
+      setDraw3(tempResult);
+      setStep('summary');
+    }
+  };
+
+  React.useEffect(() => {
+    return () => clearTarotTimeouts();
+  }, []);
 
   const startDraw = (drawNumber, previousDraw, currentMode = mode) => {
     setCurrentDrawType(drawNumber);
@@ -228,32 +279,34 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
       setTempResult(a);
     }
 
-    setTimeout(() => {
+    clearTarotTimeouts();
+    tarotTimeout1Ref.current = setTimeout(() => {
       setTarotPhase('spreading');
-      setTimeout(() => setTarotPhase('waiting'), 1000);
+      tarotTimeout2Ref.current = setTimeout(() => setTarotPhase('waiting'), 1000);
     }, 1800); // Shuffling duration shortened from 3.5s to 1.8s
   };
 
   const handleCardPick = (index) => {
+    if (tarotPhase === 'shuffling' || tarotPhase === 'spreading') {
+      clearTarotTimeouts();
+      setTarotPhase('waiting');
+      return;
+    }
+    if (tarotPhase === 'done') {
+      proceedToNextStep();
+      return;
+    }
     if (tarotPhase !== 'waiting') return; 
     setPickedCardIndex(index);
     setTarotPhase('picked');
     
-    setTimeout(() => {
+    clearTarotTimeouts();
+    tarotTimeout1Ref.current = setTimeout(() => {
       setTarotPhase('flipping');
-      setTimeout(() => {
+      tarotTimeout2Ref.current = setTimeout(() => {
         setTarotPhase('done');
-        setTimeout(() => {
-          if (currentDrawType === 1) {
-            setDraw1(tempResult);
-            startDraw(2, tempResult, mode);
-          } else if (currentDrawType === 2) {
-            setDraw2(tempResult);
-            startDraw(3, null, mode);
-          } else if (currentDrawType === 3) {
-            setDraw3(tempResult);
-            setStep('summary');
-          }
+        tarotTimeout3Ref.current = setTimeout(() => {
+          proceedToNextStep();
         }, 3000);
       }, 800);
     }, 600);
@@ -328,10 +381,16 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
           transform-style: preserve-3d;
         }
         .card-front, .card-back {
-          position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+          position: absolute; width: 100%; height: 100%;
+          backface-visibility: hidden;
+          -webkit-backface-visibility: hidden;
         }
         .card-back { transform: rotateY(180deg); }
         .is-flipped .card-inner { transform: rotateY(180deg); }
+        .is-flipped .card-front {
+          visibility: hidden;
+          transition: visibility 0s 0.4s;
+        }
 
         @keyframes realShuffle {
           0% { transform: translate(0px, 0px) rotate(0deg); z-index: 10; }
@@ -376,7 +435,17 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
 
       {/* 2. TAROT DRAW */}
       {step === 'tarot_draw' && (
-        <div className="py-16 flex flex-col items-center justify-center text-center animate-in fade-in duration-1000 overflow-hidden relative min-h-[500px]">
+        <div 
+          onClick={() => {
+            if (tarotPhase === 'shuffling' || tarotPhase === 'spreading') {
+              clearTarotTimeouts();
+              setTarotPhase('waiting');
+            } else if (tarotPhase === 'done') {
+              proceedToNextStep();
+            }
+          }}
+          className="py-16 flex flex-col items-center justify-center text-center animate-in fade-in duration-1000 overflow-hidden relative min-h-[500px] cursor-pointer"
+        >
           <h2 className="font-serif text-3xl text-amber-500 tracking-widest uppercase mb-16 relative z-30 drop-shadow-[0_0_10px_rgba(245,158,11,0.3)]">
             {currentDrawType === 1 ? 'Draw I: The Punishment' : 
              currentDrawType === 2 ? 'Draw II: The Intensity' : 
@@ -441,7 +510,7 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
                 cardId = draw1?.id;
               } else {
                 titleToDisplay = tempResult;
-                subToDisplay = 'The Humiliation';
+                subToDisplay = 'After your punishment';
               }
 
               return (
@@ -471,60 +540,172 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
       {step === 'summary' && (
         <div className="space-y-12 text-center animate-in fade-in zoom-in-95 duration-1000 py-8">
           <h2 className="font-serif text-3xl text-amber-500 tracking-widest uppercase mb-4">Your Penance is Set</h2>
-          <p className="text-amber-700/80 max-w-lg mx-auto">
-            The Oracle has decreed your suffering. You must execute this ritual precisely as demanded.
-          </p>
-          
-          <div className="flex flex-col md:flex-row gap-6 justify-center items-center mt-12 mb-16">
-            <div className="w-48 h-72 transform -rotate-6 hover:rotate-0 transition-transform duration-500 hover:z-10">
-              <TarotCardFaceUp title={draw1?.name} subtitle="The Method" cardId={draw1?.id} />
-            </div>
-            <div className="w-48 h-72 transform hover:-translate-y-4 transition-transform duration-500 hover:z-10 z-10">
-              <TarotCardFaceUp title={draw2} subtitle="The Pain" cardId={draw1?.id} />
-            </div>
-            <div className="w-48 h-72 transform rotate-6 hover:rotate-0 transition-transform duration-500 hover:z-10">
-              <TarotCardFaceUp title={draw3} subtitle="The Humiliation" />
-            </div>
-          </div>
 
-          <div className="max-w-lg mx-auto bg-zinc-900/40 border border-amber-900/30 p-8 rounded-sm mb-8">
-            <div className="flex items-center justify-between mb-6 border-b border-amber-900/30 pb-4">
-              <span className="text-amber-700 uppercase tracking-widest text-sm">Base Reward ({mode?.name})</span>
-              <span className="text-amber-500 font-mono text-lg">{mode?.tokens} ⏀</span>
+          {/* New Decree Card */}
+          <div className="max-w-md mx-auto border-2 border-amber-500 bg-zinc-950 p-8 rounded-sm shadow-[0_0_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
+            <div className="absolute inset-1 border border-amber-500/30 rounded-sm pointer-events-none" />
+            
+            {/* Gold style header */}
+            <div className="border-b border-amber-900/30 pb-4 mb-6">
+              <p className="text-amber-700 uppercase tracking-widest text-[10px] mb-1 font-bold">Decree of Penance</p>
+              <h3 className="font-serif text-2xl text-amber-400 uppercase tracking-wider">The Penance Rite</h3>
+            </div>
+
+            {/* Central emblem / pictogram */}
+            <div className="flex justify-center mb-6">
+              <div className="bg-amber-950/20 p-6 rounded-full border-2 border-amber-600/50 shadow-[inset_0_0_20px_rgba(245,158,11,0.2)]">
+                <PenanceEmblem cardId={draw1?.id} title={draw2} />
+              </div>
+            </div>
+
+            {/* Verdict details */}
+            <div className="space-y-4 text-left border-t border-b border-amber-900/30 py-6 mb-6 font-serif">
+              <div className="flex justify-between items-center">
+                <span className="text-amber-700/80 uppercase text-xs tracking-wider">Method:</span>
+                <span className="text-amber-400 text-base font-bold">{draw1?.name}</span>
+              </div>
+              <div className="flex justify-between items-start">
+                <span className="text-amber-700/80 uppercase text-xs tracking-wider pt-0.5">Intensity:</span>
+                <span className="text-amber-400 text-sm font-bold text-right max-w-[200px]">{draw2}</span>
+              </div>
+              <div className="flex justify-between items-start">
+                <span className="text-amber-700/80 uppercase text-xs tracking-wider pt-0.5">Aftermath:</span>
+                <span className="text-amber-400 text-sm font-bold text-right max-w-[200px]">{draw3}</span>
+              </div>
+            </div>
+
+            {/* Photo Proof Uploder */}
+            <div className="bg-zinc-900/60 border border-amber-900/30 p-4 rounded-sm mb-6">
+              <div className="flex items-center justify-between mb-4 border-b border-amber-900/30 pb-2">
+                <span className="text-amber-700 uppercase tracking-widest text-[10px]">Base Reward ({mode?.name})</span>
+                <span className="text-amber-500 font-mono text-sm">{mode?.tokens} ⏀</span>
+              </div>
+              
+              {!photoProofSubmitted ? (
+                <div className="flex flex-col items-center relative">
+                  <p className="text-amber-600/80 text-[11px] mb-3">Submit photo proof to the Domina to double your tokens.</p>
+                  {!user ? (
+                    <button onClick={requireAuth} className="flex items-center gap-2 px-4 py-2 border border-amber-600 text-amber-400 uppercase tracking-widest text-[10px] transition-colors bg-amber-950/40 hover:bg-amber-900/40">
+                      <UploadCloud size={14} /> 
+                      Identify & Upload (+{mode?.tokens} ⏀)
+                    </button>
+                  ) : (
+                    <label className={`cursor-pointer flex items-center gap-2 px-4 py-2 border border-amber-600 text-amber-400 uppercase tracking-widest text-[10px] transition-colors ${uploading ? 'bg-amber-900/60' : 'bg-amber-950/40 hover:bg-amber-900/40'}`}>
+                      {uploading ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />} 
+                      {uploading ? 'Transmitting...' : `Upload Proof (+${mode?.tokens} ⏀)`}
+                      <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" disabled={uploading} />
+                    </label>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center animate-in zoom-in">
+                  <div className="flex items-center gap-2 text-green-500 mb-1">
+                    <Check size={16} /> <span className="uppercase tracking-widest text-xs">Proof Transmitted</span>
+                  </div>
+                  <p className="text-amber-400 text-xs">Bonus tokens (+{mode?.tokens} ⏀) awarded!</p>
+                </div>
+              )}
+            </div>
+
+            {/* Main Action Button */}
+            <button
+              onClick={handleAcceptPenance}
+              className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold tracking-[0.2em] uppercase transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] mb-4 flex items-center justify-center gap-2"
+            >
+              <Award size={18} /> Accept Your Fate
+            </button>
+
+            {/* Share buttons */}
+            <div className="flex flex-col gap-2 pt-2 border-t border-amber-900/20">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const text = `🔮 My Penance has been decreed at the Sanctuary!\n🩸 Method: ${draw1?.name}\n⚡ Intensity: ${draw2}\n⛓️ Aftermath: ${draw3}\n\nAccepted under the Domina's gaze.`;
+                    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.origin)}`;
+                    window.open(shareUrl, '_blank');
+                  }}
+                  className="flex-1 py-2 bg-zinc-900 hover:bg-zinc-800 border border-amber-900/50 text-amber-500 text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  Share on X
+                </button>
+                <button
+                  onClick={() => {
+                    const text = `🔮 My Penance has been decreed at the Sanctuary!\n🩸 Method: ${draw1?.name}\n⚡ Intensity: ${draw2}\n⛓️ Aftermath: ${draw3}\n\nAccepted under the Domina's gaze.`;
+                    navigator.clipboard.writeText(`${text}\nJoin the Sanctuary: ${window.location.origin}`);
+                    setShareMessage('Decree details copied to clipboard!');
+                    setTimeout(() => setShareMessage(''), 3000);
+                    window.open('https://discord.gg/qRmwseJv', '_blank');
+                  }}
+                  className="flex-1 py-2 bg-zinc-900 hover:bg-zinc-800 border border-amber-900/50 text-amber-500 text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                >
+                  <svg viewBox="0 0 127.14 96.36" className="w-4 h-4 fill-current">
+                    <path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.5-5c.89-.65,1.76-1.34,2.58-2.06a75.48,75.48,0,0,0,65.8,0c.82.72,1.69,1.41,2.58,2.06a68.4,68.4,0,0,1-10.5,5,77.7,77.7,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31.42-18.83C129.9,49.12,123.82,26.31,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"/>
+                  </svg>
+                  Discord
+                </button>
+              </div>
+              <button
+                onClick={() => {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = 800;
+                  canvas.height = 600;
+                  const ctx = canvas.getContext('2d');
+                  ctx.fillStyle = '#09090b';
+                  ctx.fillRect(0, 0, canvas.width, canvas.height);
+                  ctx.strokeStyle = '#d97706';
+                  ctx.lineWidth = 8;
+                  ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+                  ctx.strokeStyle = '#f59e0b';
+                  ctx.lineWidth = 2;
+                  ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+                  ctx.fillStyle = '#f59e0b';
+                  ctx.font = 'bold 36px serif';
+                  ctx.textAlign = 'center';
+                  ctx.fillText('DECREE OF PENANCE', canvas.width / 2, 120);
+                  ctx.fillStyle = '#b45309';
+                  ctx.font = 'italic 18px serif';
+                  ctx.fillText('THE SANCTUARY OF OBEDIENCE', canvas.width / 2, 155);
+                  
+                  // Simple Skull or Flame shape
+                  ctx.strokeStyle = '#f59e0b';
+                  ctx.lineWidth = 4;
+                  ctx.beginPath();
+                  ctx.moveTo(canvas.width / 2, 230);
+                  ctx.bezierCurveTo(canvas.width / 2 - 30, 270, canvas.width / 2 - 30, 310, canvas.width / 2, 330);
+                  ctx.bezierCurveTo(canvas.width / 2 + 30, 310, canvas.width / 2 + 30, 270, canvas.width / 2, 230);
+                  ctx.stroke();
+
+                  ctx.fillStyle = '#f59e0b';
+                  ctx.font = 'bold 24px serif';
+                  ctx.fillText(`Method: ${draw1?.name}`, canvas.width / 2, 380);
+                  ctx.font = '18px sans-serif';
+                  ctx.fillText(`Intensity: ${draw2}`, canvas.width / 2, 420);
+                  ctx.fillText(`Aftermath: ${draw3}`, canvas.width / 2, 460);
+                  ctx.fillStyle = '#78350f';
+                  ctx.font = 'italic 16px sans-serif';
+                  ctx.fillText('Submit to your penance with grace.', canvas.width / 2, 510);
+                  ctx.font = '14px monospace';
+                  ctx.fillStyle = '#451a03';
+                  ctx.fillText(window.location.origin, canvas.width / 2, 550);
+                  
+                  const link = document.createElement('a');
+                  link.download = 'decree_of_penance.png';
+                  link.href = canvas.toDataURL();
+                  link.click();
+                }}
+                className="py-2 bg-amber-950/20 hover:bg-amber-950/40 border border-amber-600/30 text-amber-400 text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+              >
+                Download Decree Card Image
+              </button>
             </div>
             
-            {!photoProofSubmitted ? (
-              <div className="flex flex-col items-center relative">
-                <p className="text-amber-600/80 text-sm mb-4">Submit photographic proof to the Domina to double your tokens.</p>
-                {!user ? (
-                  <button onClick={requireAuth} className="flex items-center gap-2 px-6 py-3 border border-amber-600 text-amber-400 uppercase tracking-widest text-xs transition-colors bg-amber-950/40 hover:bg-amber-900/40">
-                    <UploadCloud size={16} /> 
-                    Identify Your Soul to Upload (+{mode?.tokens} ⏀)
-                  </button>
-                ) : (
-                  <label className={`cursor-pointer flex items-center gap-2 px-6 py-3 border border-amber-600 text-amber-400 uppercase tracking-widest text-xs transition-colors ${uploading ? 'bg-amber-900/60' : 'bg-amber-950/40 hover:bg-amber-900/40'}`}>
-                    {uploading ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} />} 
-                    {uploading ? 'Transmitting...' : `Upload Proof (+${mode?.tokens} ⏀)`}
-                    <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" disabled={uploading} />
-                  </label>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center animate-in zoom-in">
-                <div className="flex items-center gap-2 text-green-500 mb-2">
-                  <Check size={20} /> <span className="uppercase tracking-widest text-sm">Proof Transmitted</span>
-                </div>
-                <p className="text-amber-400 text-sm mb-4">Bonus tokens (+{mode?.tokens} ⏀) have been awarded directly to your Treasury!</p>
-              </div>
+            {shareMessage && (
+              <p className="text-amber-500 text-xs mt-4 animate-pulse">{shareMessage}</p>
             )}
           </div>
-          
-          <button 
-            onClick={handleAcceptPenance}
-            className="w-full max-w-md mx-auto py-5 bg-amber-900/20 hover:bg-amber-900/40 border border-amber-500 text-amber-400 font-serif tracking-[0.2em] uppercase transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] flex items-center justify-center gap-3"
-          >
-            <Award size={24} /> Accept Your Fate
-          </button>
         </div>
       )}
     </div>
