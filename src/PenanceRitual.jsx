@@ -14,88 +14,18 @@ const THEME = {
   header: 'border-b border-amber-900/30',
 };
 
-// --- DATA STRUCTURES ---
-const MODES = [
-  { id: 'soft', name: 'Soft', tokens: 50, desc: 'A gentle reminder of your place.' },
-  { id: 'mid', name: 'Mid', tokens: 150, desc: 'A painful lesson in submission.' },
-  { id: 'hard', name: 'Hard', tokens: 300, desc: 'Absolute physical and mental breakdown.' },
-];
-
-const PUNISHMENTS = [
-  { id: 'spanking', name: 'Spanking' },
-  { id: 'clamps', name: 'Nipple Clamps' },
-  { id: 'ballbusting', name: 'Light Ballbusting' },
-  { id: 'corner', name: 'Corner Time' },
-  { id: 'lines', name: 'Writing Lines' }
-];
-
-// Weighted punishment selection depending on selected mode (soft, mid, hard)
-const getWeightedPunishment = (modeId) => {
-  // Index mapping: 0: spanking, 1: clamps, 2: ballbusting, 3: corner, 4: lines
-  let weights = [1, 1, 1, 1, 1]; // default flat weights
-  
-  if (modeId === 'soft') {
-    // lines (4) and corner (3) high; spanking (0), clamps (1), ballbusting (2) low
-    weights = [1, 1, 1, 6, 6]; 
-  } else if (modeId === 'mid') {
-    // clamps (1) and ballbusting (2) high; others low
-    weights = [2, 7, 7, 2, 2];
-  } else if (modeId === 'hard') {
-    // spanking (0) is very high; others low
-    weights = [8, 2, 2, 2, 2];
-  }
-  
-  const totalWeight = weights.reduce((acc, w) => acc + w, 0);
-  let random = Math.random() * totalWeight;
-  
-  for (let i = 0; i < PUNISHMENTS.length; i++) {
-    if (random < weights[i]) {
-      return PUNISHMENTS[i];
-    }
-    random -= weights[i];
-  }
-  return PUNISHMENTS[0];
-};
-
-const INTENSITIES = {
-  spanking: {
-    soft: ['20 strikes with hand', '30 strikes with hand'],
-    mid: ['50 strikes with hairbrush', '60 strikes with wooden spoon'],
-    hard: ['100 strikes with cane', '120 strikes with belt']
-  },
-  clamps: {
-    soft: ['5 mins, no weight', '10 mins, no weight'],
-    mid: ['15 mins, light weights', '20 mins, light weights'],
-    hard: ['30 mins, heavy weights', '45 mins, heavy weights']
-  },
-  ballbusting: {
-    soft: ['10 flicks with fingers', '15 flicks with fingers'],
-    mid: ['20 slaps with hand', '30 slaps with hand'],
-    hard: ['50 slaps with hand', '20 strikes with light crop']
-  },
-  corner: {
-    soft: ['10 mins standing', '15 mins standing'],
-    mid: ['20 mins kneeling', '30 mins kneeling, hands behind back'],
-    hard: ['45 mins kneeling on rice', '60 mins kneeling, holding object with nose against wall']
-  },
-  lines: {
-    soft: ['50 lines: "I will be obedient"', '100 lines: "I must submit"'],
-    mid: ['200 lines: "My body belongs to the Domina"', '300 lines: "I am a pathetic servant"'],
-    hard: ['500 lines: "I am nothing without Her discipline"', '1000 lines: "Pain is my only purpose"']
-  }
-};
-
-const AFTERMATHS = [
-  'Wear feminine lingerie all day',
-  'Wear adult diaper all day',
-  'Wear an anal plug all day',
-  'Crawl instead of walking for 2 hours',
-  'Sleep on the bare floor tonight',
-  'Chastity locked for 24 hours'
-];
+import { 
+  MODES, 
+  PUNISHMENTS, 
+  getWeightedPunishment, 
+  INTENSITIES, 
+  AFTERMATHS, 
+  getCardAsset,
+  getRecapAsset
+} from './ritualData';
 
 // --- TAROT UI COMPONENTS ---
-const TarotCardFaceDown = () => (
+export const TarotCardFaceDown = () => (
   <div className="w-full h-full border border-amber-600/50 bg-gradient-to-br from-zinc-900 to-amber-950 rounded-sm flex items-center justify-center relative overflow-hidden shadow-[inset_0_0_20px_rgba(245,158,11,0.2)]">
     <div className="absolute inset-2 border border-amber-500/20 rounded-sm flex flex-col items-center justify-center p-4">
       <div className="w-full h-full border border-amber-900/40 rounded-full absolute animate-ping opacity-20" style={{ animationDuration: '4s' }} />
@@ -105,47 +35,7 @@ const TarotCardFaceDown = () => (
   </div>
 );
 
-// Resolve specific asset image based on punishment type and text description
-const getCardAsset = (cardId, title) => {
-  if (!cardId) return null;
-  const text = title ? title.toLowerCase() : '';
-
-  if (cardId === 'spanking') {
-    if (text.includes('hairbrush')) return '/spanking-hairbrush.png';
-    if (text.includes('spoon')) return '/spanking-spoon.png';
-    if (text.includes('cane')) return '/spanking-cane.png';
-    if (text.includes('belt')) return '/spanking-belt.png';
-    return '/hand-spanking.png';
-  }
-  
-  if (cardId === 'clamps') {
-    if (text.includes('heavy')) return '/clamps-heavy.png';
-    if (text.includes('light')) return '/clamps-light.png';
-    return '/x-clamps.png';
-  }
-
-  if (cardId === 'ballbusting') {
-    if (text.includes('flick') || text.includes('finger')) return '/x-ballbsutingFinger.png';
-    if (text.includes('crop')) return '/X-ballbusting-crop.png';
-    if (text.includes('hand') || text.includes('slap')) return '/ballbusting-hand.png';
-    return '/x-ballbusting.png';
-  }
-
-  if (cardId === 'corner') {
-    if (text.includes('rice')) return '/corner-rice.png';
-    if (text.includes('nose') || text.includes('wall')) return '/corner-wall.png';
-    if (text.includes('kneel')) return '/corner-kneeling.png';
-    return '/corner-standing.png';
-  }
-
-  if (cardId === 'lines') {
-    return '/x-writing.png';
-  }
-
-  return null;
-};
-
-const TarotCardFaceUp = ({ title, subtitle, cardId }) => {
+export const TarotCardFaceUp = ({ title, subtitle, cardId }) => {
   const picSrc = getCardAsset(cardId, title);
 
   return (
@@ -186,24 +76,52 @@ const TarotCardFaceUp = ({ title, subtitle, cardId }) => {
   );
 };
 
-const PenanceEmblem = ({ cardId, title }) => {
+export const PenanceEmblem = ({ cardId, title, isRecap = false }) => {
   const [error, setError] = React.useState(false);
-  const src = getCardAsset(cardId, title);
+  const [fallbackToStandard, setFallbackToStandard] = React.useState(false);
+  
+  const src = isRecap ? getRecapAsset(cardId) : getCardAsset(cardId, title);
 
   React.useEffect(() => {
     setError(false);
+    setFallbackToStandard(false);
   }, [src]);
 
-  if (!src || error) {
-    return <Flame size={48} className="text-amber-400" />;
+  if (isRecap && error && !fallbackToStandard) {
+    const standardSrc = getCardAsset(cardId, title);
+    if (standardSrc) {
+      return (
+        <img 
+          src={standardSrc} 
+          alt={title} 
+          className="w-32 h-32 md:w-40 md:h-40 object-contain filter drop-shadow-[0_0_15px_rgba(245,158,11,0.5)] transition-all duration-500 hover:scale-105" 
+          onError={() => setError(true)}
+        />
+      );
+    }
   }
+
+  if (error || (!src && !fallbackToStandard)) {
+    return <Flame size={isRecap ? 80 : 48} className="text-amber-400 filter drop-shadow-[0_0_15px_rgba(245,158,11,0.5)] animate-pulse" />;
+  }
+
+  const finalSrc = fallbackToStandard ? getCardAsset(cardId, title) : src;
 
   return (
     <img 
-      src={src} 
+      src={finalSrc} 
       alt={title} 
-      className="w-16 h-16 object-contain" 
-      onError={() => setError(true)}
+      className={isRecap 
+        ? "w-32 h-32 md:w-40 md:h-40 object-contain filter drop-shadow-[0_0_15px_rgba(245,158,11,0.5)] transition-all duration-500 hover:scale-105" 
+        : "w-16 h-16 object-contain"
+      }
+      onError={() => {
+        if (isRecap && !fallbackToStandard) {
+          setFallbackToStandard(true);
+        } else {
+          setError(true);
+        }
+      }}
     />
   );
 };
@@ -552,10 +470,8 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
             </div>
 
             {/* Central emblem / pictogram */}
-            <div className="flex justify-center mb-6">
-              <div className="bg-amber-950/20 p-6 rounded-full border-2 border-amber-600/50 shadow-[inset_0_0_20px_rgba(245,158,11,0.2)]">
-                <PenanceEmblem cardId={draw1?.id} title={draw2} />
-              </div>
+            <div className="flex justify-center mb-6 min-h-[160px] items-center">
+              <PenanceEmblem cardId={draw1?.id} title={draw2} isRecap={true} />
             </div>
 
             {/* Verdict details */}

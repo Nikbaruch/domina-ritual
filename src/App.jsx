@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PenanceRitual from './PenanceRitual';
+import ConfessionRitual from './ConfessionRitual';
 import AdminDashboard from './AdminDashboard';
 import DivineReward from './DivineReward';
 import { supabase } from './supabaseClient';
@@ -7,7 +8,7 @@ import {
   Flame, Lock, Dumbbell, Gift, Menu, X,
   Sparkles, User, ChevronLeft, Hexagon, Circle, Disc,
   Maximize2, Minimize2, ScanLine, MinusCircle, ShieldAlert,
-  Fingerprint, Hourglass, Eye, Key
+  Fingerprint, Hourglass, Eye, Key, MessageSquare
 } from 'lucide-react';
 
 const THEME = {
@@ -1038,6 +1039,7 @@ export default function App() {
     switch (view) {
       case 'chastity': return <DisciplineRitual back={() => setView('hub')} addTokens={addTokens} user={user} requireAuth={() => setShowAuthModal(true)} />;
       case 'penance': return <PenanceRitual back={() => setView('hub')} addTokens={addTokens} user={user} profile={profile} requireAuth={() => setShowAuthModal(true)} />;
+      case 'confession': return <ConfessionRitual back={() => setView('hub')} addTokens={addTokens} user={user} profile={profile} requireAuth={() => setShowAuthModal(true)} />;
       case 'reward': return <DivineReward back={() => setView('hub')} tokens={tokens} spendAllTokens={spendAllTokens} addTokens={addTokens} />;
       case 'admin':
         if (profile?.role !== 'admin') return <HubView />;
@@ -1059,9 +1061,9 @@ export default function App() {
           <Lock size={40} className="mb-4 text-amber-700 group-hover:text-amber-500" />
           <h2 className="font-serif text-xl text-amber-500 mb-2">Discipline</h2>
         </button>
-        <button className={`${THEME.panel} p-8 text-center flex flex-col items-center group opacity-50`}>
-          <Dumbbell size={40} className="mb-4 text-amber-700" />
-          <h2 className="font-serif text-xl text-amber-500 mb-2">Devotion</h2>
+        <button onClick={() => setView('confession')} className={`${THEME.panel} p-8 text-center flex flex-col items-center group`}>
+          <MessageSquare size={40} className="mb-4 text-amber-700 group-hover:text-amber-500" />
+          <h2 className="font-serif text-xl text-amber-500 mb-2">Confession</h2>
         </button>
       </section>
 
