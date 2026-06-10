@@ -43,28 +43,28 @@ export const getWeightedPunishment = (modeId) => {
 export const INTENSITIES = {
   spanking: {
     soft: ['20 strikes with hand', '30 strikes with hand'],
-    mid: ['50 strikes with hairbrush', '60 strikes with wooden spoon'],
-    hard: ['100 strikes with cane', '120 strikes with belt']
+    mid: ['40 strikes with hairbrush', '50 strikes with wooden spoon'],
+    hard: ['80 strikes with belt', '100 strikes with wooden spoon']
   },
   clamps: {
     soft: ['5 mins, no weight', '10 mins, no weight'],
     mid: ['15 mins, light weights', '20 mins, light weights'],
-    hard: ['30 mins, heavy weights', '45 mins, heavy weights']
+    hard: ['20 mins, heavy weights', '30 mins, heavy weights']
   },
   ballbusting: {
     soft: ['10 flicks with fingers', '15 flicks with fingers'],
     mid: ['20 slaps with hand', '30 slaps with hand'],
-    hard: ['50 slaps with hand', '20 strikes with light crop']
+    hard: ['30 slaps with hand', '10 strikes with light crop']
   },
   corner: {
     soft: ['10 mins standing', '15 mins standing'],
     mid: ['20 mins kneeling', '30 mins kneeling, hands behind back'],
-    hard: ['45 mins kneeling on rice', '60 mins kneeling, holding object with nose against wall']
+    hard: ['30 mins kneeling on rice', '45 mins kneeling, nose against wall']
   },
   lines: {
     soft: ['50 lines: "I will be obedient"', '100 lines: "I must submit"'],
-    mid: ['200 lines: "My body belongs to the Domina"', '300 lines: "I am a pathetic servant"'],
-    hard: ['500 lines: "I am nothing without Her discipline"', '1000 lines: "Pain is my only purpose"']
+    mid: ['150 lines: "My body belongs to the Domina"', '200 lines: "I am a pathetic servant"'],
+    hard: ['300 lines: "I am nothing without Her discipline"', '500 lines: "Pain is my only purpose"']
   }
 };
 
@@ -92,14 +92,14 @@ export const getCardAsset = (cardId, title) => {
   if (cardId === 'clamps') {
     if (text.includes('heavy')) return '/clamps-heavy.png';
     if (text.includes('light')) return '/clamps-light.png';
-    return '/x-clamps.png';
+    return '/clamps-normal.png';
   }
-
+  
   if (cardId === 'ballbusting') {
-    if (text.includes('flick') || text.includes('finger')) return '/x-ballbsutingFinger.png';
-    if (text.includes('crop')) return '/X-ballbusting-crop.png';
+    if (text.includes('flick') || text.includes('finger')) return '/ballbusting-fingers.png';
+    if (text.includes('crop')) return '/ballbusting-crop.png';
     if (text.includes('hand') || text.includes('slap')) return '/ballbusting-hand.png';
-    return '/x-ballbusting.png';
+    return '/ballbusting.png';
   }
 
   if (cardId === 'corner') {
@@ -110,7 +110,7 @@ export const getCardAsset = (cardId, title) => {
   }
 
   if (cardId === 'lines') {
-    return '/x-writing.png';
+    return '/writing-lines.png';
   }
 
   return null;

@@ -288,6 +288,51 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
     }
   };
 
+  const getShareCanvas = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 600;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#09090b';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 36px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('DECREE OF PENANCE', canvas.width / 2, 120);
+    ctx.fillStyle = '#b45309';
+    ctx.font = 'italic 18px serif';
+    ctx.fillText('THE SANCTUARY OF OBEDIENCE', canvas.width / 2, 155);
+    
+    // Simple Skull or Flame shape
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 230);
+    ctx.bezierCurveTo(canvas.width / 2 - 30, 270, canvas.width / 2 - 30, 310, canvas.width / 2, 330);
+    ctx.bezierCurveTo(canvas.width / 2 + 30, 310, canvas.width / 2 + 30, 270, canvas.width / 2, 230);
+    ctx.stroke();
+
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 24px serif';
+    ctx.fillText(`Method: ${draw1?.name}`, canvas.width / 2, 380);
+    ctx.font = '18px sans-serif';
+    ctx.fillText(`Intensity: ${draw2}`, canvas.width / 2, 420);
+    ctx.fillText(`Aftermath: ${draw3}`, canvas.width / 2, 460);
+    ctx.fillStyle = '#78350f';
+    ctx.font = 'italic 16px sans-serif';
+    ctx.fillText('Submit to your penance with grace.', canvas.width / 2, 510);
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#451a03';
+    ctx.fillText(window.location.origin, canvas.width / 2, 550);
+    return canvas;
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-4 md:p-8 animate-in slide-in-from-bottom-10 duration-700">
       
@@ -565,48 +610,7 @@ export default function PenanceRitual({ back, addTokens, user, profile, requireA
               </div>
               <button
                 onClick={() => {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = 800;
-                  canvas.height = 600;
-                  const ctx = canvas.getContext('2d');
-                  ctx.fillStyle = '#09090b';
-                  ctx.fillRect(0, 0, canvas.width, canvas.height);
-                  ctx.strokeStyle = '#d97706';
-                  ctx.lineWidth = 8;
-                  ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
-                  ctx.strokeStyle = '#f59e0b';
-                  ctx.lineWidth = 2;
-                  ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
-                  ctx.fillStyle = '#f59e0b';
-                  ctx.font = 'bold 36px serif';
-                  ctx.textAlign = 'center';
-                  ctx.fillText('DECREE OF PENANCE', canvas.width / 2, 120);
-                  ctx.fillStyle = '#b45309';
-                  ctx.font = 'italic 18px serif';
-                  ctx.fillText('THE SANCTUARY OF OBEDIENCE', canvas.width / 2, 155);
-                  
-                  // Simple Skull or Flame shape
-                  ctx.strokeStyle = '#f59e0b';
-                  ctx.lineWidth = 4;
-                  ctx.beginPath();
-                  ctx.moveTo(canvas.width / 2, 230);
-                  ctx.bezierCurveTo(canvas.width / 2 - 30, 270, canvas.width / 2 - 30, 310, canvas.width / 2, 330);
-                  ctx.bezierCurveTo(canvas.width / 2 + 30, 310, canvas.width / 2 + 30, 270, canvas.width / 2, 230);
-                  ctx.stroke();
-
-                  ctx.fillStyle = '#f59e0b';
-                  ctx.font = 'bold 24px serif';
-                  ctx.fillText(`Method: ${draw1?.name}`, canvas.width / 2, 380);
-                  ctx.font = '18px sans-serif';
-                  ctx.fillText(`Intensity: ${draw2}`, canvas.width / 2, 420);
-                  ctx.fillText(`Aftermath: ${draw3}`, canvas.width / 2, 460);
-                  ctx.fillStyle = '#78350f';
-                  ctx.font = 'italic 16px sans-serif';
-                  ctx.fillText('Submit to your penance with grace.', canvas.width / 2, 510);
-                  ctx.font = '14px monospace';
-                  ctx.fillStyle = '#451a03';
-                  ctx.fillText(window.location.origin, canvas.width / 2, 550);
-                  
+                  const canvas = getShareCanvas();
                   const link = document.createElement('a');
                   link.download = 'decree_of_penance.png';
                   link.href = canvas.toDataURL();

@@ -271,6 +271,49 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
     </div>
   );
 
+  const getShareCanvas = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 600;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#09090b';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 36px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('DECREE OF DISCIPLINE', canvas.width / 2, 120);
+    ctx.fillStyle = '#b45309';
+    ctx.font = 'italic 18px serif';
+    ctx.fillText('THE SANCTUARY OF OBEDIENCE', canvas.width / 2, 155);
+    
+    // Simple Lock symbol
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(canvas.width / 2 - 25, 260, 50, 40);
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, 260, 20, Math.PI, 0);
+    ctx.stroke();
+
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 26px serif';
+    ctx.fillText(`Assigned: ${selectedCage?.name}`, canvas.width / 2, 370);
+    ctx.font = '22px sans-serif';
+    ctx.fillText(`Duration: ${durationStr}`, canvas.width / 2, 420);
+    ctx.fillStyle = '#78350f';
+    ctx.font = 'italic 16px sans-serif';
+    ctx.fillText('Under the Domina\'s gaze, your vow begins.', canvas.width / 2, 490);
+    ctx.font = '14px monospace';
+    ctx.fillStyle = '#451a03';
+    ctx.fillText(window.location.origin, canvas.width / 2, 540);
+    return canvas;
+  };
+
   return (
     <div className="max-w-2xl mx-auto p-4 md:p-8 animate-in slide-in-from-bottom-10 duration-700">
 
@@ -548,45 +591,7 @@ const DisciplineRitual = ({ back, addTokens, user, requireAuth }) => {
               </div>
               <button
                 onClick={() => {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = 800;
-                  canvas.height = 600;
-                  const ctx = canvas.getContext('2d');
-                  ctx.fillStyle = '#09090b';
-                  ctx.fillRect(0, 0, canvas.width, canvas.height);
-                  ctx.strokeStyle = '#d97706';
-                  ctx.lineWidth = 8;
-                  ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
-                  ctx.strokeStyle = '#f59e0b';
-                  ctx.lineWidth = 2;
-                  ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
-                  ctx.fillStyle = '#f59e0b';
-                  ctx.font = 'bold 36px serif';
-                  ctx.textAlign = 'center';
-                  ctx.fillText('DECREE OF DISCIPLINE', canvas.width / 2, 120);
-                  ctx.fillStyle = '#b45309';
-                  ctx.font = 'italic 18px serif';
-                  ctx.fillText('THE SANCTUARY OF OBEDIENCE', canvas.width / 2, 155);
-                  
-                  // Simple Lock symbol
-                  ctx.strokeStyle = '#f59e0b';
-                  ctx.lineWidth = 4;
-                  ctx.strokeRect(canvas.width / 2 - 25, 260, 50, 40);
-                  ctx.beginPath();
-                  ctx.arc(canvas.width / 2, 260, 20, Math.PI, 0);
-                  ctx.stroke();
-
-                  ctx.fillStyle = '#f59e0b';
-                  ctx.font = 'bold 26px serif';
-                  ctx.fillText(`Assigned: ${selectedCage?.name}`, canvas.width / 2, 370);
-                  ctx.font = '22px sans-serif';
-                  ctx.fillText(`Duration: ${durationStr}`, canvas.width / 2, 420);
-                  ctx.fillStyle = '#78350f';
-                  ctx.font = 'italic 16px sans-serif';
-                  ctx.fillText('Under the Domina\'s gaze, your vow begins.', canvas.width / 2, 490);
-                  ctx.font = '14px monospace';
-                  ctx.fillStyle = '#451a03';
-                  ctx.fillText(window.location.origin, canvas.width / 2, 540);
+                  const canvas = getShareCanvas();
                   const link = document.createElement('a');
                   link.download = 'decree_of_discipline.png';
                   link.href = canvas.toDataURL();
